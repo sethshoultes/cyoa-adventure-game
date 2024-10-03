@@ -386,7 +386,7 @@ The player chose: $user_command. What happens next?";
     
     5. The ‘Location’ must be a place in the D&D 5e and the Elder Scrolls universe.
     
-    6. The ‘Description’ must stay between 3 to 10 sentences.
+    6. [IMPORTANT]The ‘Description’ must stay between 3 to 10 sentences.[/IMPORTANT]
     
     7. Increase the value for ‘Turn number’ by +1 every time it’s your turn.
     
@@ -408,7 +408,7 @@ The player chose: $user_command. What happens next?";
     
     5. Display ‘Game Over’ if ‘Health’ falls to 0 or lower.
     
-    6. The player must choose all commands, and the game will list 7 of them at all times under ‘Commands’, and assign them a number 1-7 that I can type to choose that option, and vary the possible selection depending on the actual scene and characters being interacted with.
+    6. The player must choose all commands, and the game will list 7 of them at all times under ‘Commands’, and [IMPORTANT]assign them a number 1-7[/IMPORTANT] that I can type to choose that option, and vary the possible selection depending on the actual scene and characters being interacted with.
     
     7. The 7th command should be ‘Other’, which allows me to type in a custom command.
     
@@ -489,8 +489,7 @@ The player chose: $user_command. What happens next?";
     6. {command6}  
     7. Other
     [/IMPORTANT]
-    
-    Start Game.";
+     Start Game.";
 
     $postData = [
         'model' => $chatgpt_version,

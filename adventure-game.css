@@ -89,3 +89,36 @@ ul li a {
 ul li a:hover {
     text-decoration: underline;
 }
+
+
+.character-editor {
+    background-color: #f0f0f0;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.character-editor label {
+    display: block;
+    margin: 10px 0 5px;
+}
+
+.character-editor input[type="text"], .character-editor input[type="number"] {
+    padding: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.save-changes-button, .reset-character-button {
+    padding: 10px 20px;
+    background-color: #0073aa;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.save-changes-button:hover, .reset-character-button:hover {
+    background-color: #005f8a;
+}

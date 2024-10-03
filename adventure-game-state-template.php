@@ -1,6 +1,7 @@
 <?php
 // Ensure $parsed_state is available
 if (!isset($parsed_state)) {
+    echo 'No game state found.';
     return;
 }
 ?>
@@ -15,7 +16,7 @@ if (!isset($parsed_state)) {
     <p><strong>AC:</strong> <?php echo esc_html($parsed_state['AC'] ?? ''); ?></p>
     <p><strong>Level:</strong> <?php echo esc_html($parsed_state['Level'] ?? ''); ?></p>
     <p><strong>Location:</strong> <?php echo esc_html($parsed_state['Location'] ?? ''); ?></p>
-    <p><strong>FartCoin:</strong> <?php echo esc_html($parsed_state['FartCoin'] ?? ''); ?></p>
+    <p><strong>Coin:</strong> <?php echo esc_html($parsed_state['Coin'] ?? ''); ?></p>
     <p><strong>Quest:</strong> <?php echo esc_html($parsed_state['Quest'] ?? ''); ?></p>
     <p><strong>Inventory:</strong> <?php echo esc_html($parsed_state['Inventory'] ?? ''); ?></p>
     <p><strong>Abilities:</strong> <?php echo esc_html($parsed_state['Abilities'] ?? ''); ?></p>

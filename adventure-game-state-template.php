@@ -4,7 +4,21 @@ if (!isset($parsed_state)) {
     echo 'No game state found.';
     return;
 }
+
+// Fetch character data from user meta
+$user_id = get_current_user_id();
+$character = get_user_meta($user_id, 'adventure_game_character', true);
+
+if ($character) {
+    $character_name = esc_html($character['Name'] ?? 'Unknown');
+    $character_race = esc_html($character['Race'] ?? 'Unknown');
+    $character_class = esc_html($character['Class'] ?? 'Unknown');
+    $attributes = $character['Attributes'] ?? [];
+    $skills = $character['Skills'] ?? [];
+    $backstory = esc_html($character['Backstory'] ?? 'No backstory available.');
+}
 ?>
+
 <div class="game-status">
     <h3>Game Status</h3>
     <p><strong>Turn:</strong> <?php echo esc_html($parsed_state['Turn number'] ?? ''); ?></p>
@@ -21,10 +35,38 @@ if (!isset($parsed_state)) {
     <p><strong>Inventory:</strong> <?php echo esc_html($parsed_state['Inventory'] ?? ''); ?></p>
     <p><strong>Abilities:</strong> <?php echo esc_html($parsed_state['Abilities'] ?? ''); ?></p>
 </div>
+
+<?php if (!empty($character)): ?>
+    <div class="character-data">
+        <h3>Character Data</h3>
+        <p><strong>Name:</strong> <?php echo $character_name; ?></p>
+        <p><strong>Race:</strong> <?php echo $character_race; ?></p>
+        <p><strong>Class:</strong> <?php echo $character_class; ?></p>
+
+        <h4>Attributes</h4>
+        <ul>
+            <?php foreach ($attributes as $attr_name => $attr_value): ?>
+                <li><strong><?php echo esc_html($attr_name); ?>:</strong> <?php echo esc_html($attr_value); ?></li>
+            <?php endforeach; ?>
+        </ul>
+
+        <h4>Skills</h4>
+        <ul>
+            <?php foreach ($skills as $skill): ?>
+                <li><?php echo esc_html($skill); ?></li>
+            <?php endforeach; ?>
+        </ul>
+
+        <h4>Backstory</h4>
+        <p><?php echo $backstory; ?></p>
+    </div>
+<?php endif; ?>
+
 <div class="game-description">
     <h3>Description</h3>
     <p><?php echo nl2br(esc_html($parsed_state['Description'] ?? '')); ?></p>
 </div>
+
 <?php if (!empty($parsed_state['Possible Commands'])): ?>
     <div class="game-commands">
         <h3>Possible Commands</h3>

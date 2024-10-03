@@ -26,20 +26,20 @@ $adventure_query = new WP_Query($args);
 
 if ($adventure_query->have_posts()) {
     echo '<h2>Your Adventure History</h2>';
-    echo '<ul>';
+    echo '<div class="adventure-history">';
     while ($adventure_query->have_posts()) {
         $adventure_query->the_post();
         ?>
-        <li>
-            <h3><?php the_title(); ?> (<?php echo get_the_date(); ?>)</h3>
+        <div class="adventure-item">
+            <h3><?php the_title(); ?></h3>
+            <p class="adventure-date"><?php echo get_the_date('F j, Y'); ?> at <?php echo get_the_time('g:i a'); ?></p>
             <div class="adventure-content">
                 <?php the_content(); ?>
             </div>
-            <hr />
-        </li>
+        </div>
         <?php
     }
-    echo '</ul>';
+    echo '</div>';
 } else {
     echo '<p>No adventure history found.</p>';
 }

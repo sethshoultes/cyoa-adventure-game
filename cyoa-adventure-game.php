@@ -233,68 +233,71 @@ function wp_adventure_game_shortcode() {
 
     <script>
     document.getElementById('adventure-game-form').addEventListener('submit', function(e) {
-        e.preventDefault();  // Prevent the form from submitting the normal way
-        var userCommand = document.getElementById('user_command').value.trim();
+    e.preventDefault();  // Prevent the form from submitting the normal way
+    var userCommand = document.getElementById('user_command').value.trim();
 
-        if (userCommand === '') {
-            alert('Please enter a command.');
-            return;
-        }
+    if (userCommand === '') {
+        alert('Please enter a command.');
+        return;
+    }
 
-        // Prepare the data to send
-        var data = new FormData();
-        data.append('action', 'wp_adventure_game_stream');  // Ensure this matches the registered AJAX action
-        data.append('user_command', userCommand);
+    // Prepare the data to send
+    var data = new FormData();
+    data.append('action', 'wp_adventure_game_stream');  // Ensure this matches the registered AJAX action
+    data.append('user_command', userCommand);
 
-        // Clear the input field
-        document.getElementById('user_command').value = '';
+    // Clear the input field
+    document.getElementById('user_command').value = '';
 
-        // Disable the submit button to prevent multiple submissions
-        var submitButton = document.querySelector('#adventure-game-form input[type="submit"]');
-        submitButton.disabled = true;
-        submitButton.value = 'Processing...';
+    // Disable the submit button to prevent multiple submissions
+    var submitButton = document.querySelector('#adventure-game-form input[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.value = 'Processing...';
 
-        // Prepare the game state display
-        var gameStateContainer = document.querySelector('.game-state');
-        if (!gameStateContainer) {
-            console.error('Element with class "game-state" not found.');
-            // Re-enable the submit button
-            submitButton.disabled = false;
-            submitButton.value = 'Submit';
-            return;
-        }
+    // Prepare the game state display
+    var gameStateContainer = document.querySelector('.game-state');
+    if (!gameStateContainer) {
+        console.error('Element with class "game-state" not found.');
+        // Re-enable the submit button
+        submitButton.disabled = false;
+        submitButton.value = 'Submit';
+        return;
+    }
 
-        fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-            method: 'POST',
-            body: data,
-            credentials: 'same-origin',
-        })
-        .then(response => response.text())
-        .then(html => {
-             // Replace any Markdown-style bold (**) with <strong> HTML tags
-            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin',
+    })
+    .then(response => response.text())
+    .then(html => {
+        // Replace any Markdown-style bold (**) with <strong> HTML tags
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-            // Strip out triple backticks if they exist in the response
-            html = html.replace(/```/g, '');
-            
-            // Replace only the game state content
+        // Strip out triple backticks if they exist in the response
+        html = html.replace(/```/g, '');
+        
+        // Check if the new response content is the same as the existing content
+        if (gameStateContainer.innerHTML !== html) {
+            // Update the game state content only if it's different
             gameStateContainer.innerHTML = html;
+        }
 
-            // Re-enable the submit button
-            submitButton.disabled = false;
-            submitButton.value = 'Submit';
+        // Re-enable the submit button
+        submitButton.disabled = false;
+        submitButton.value = 'Submit';
 
-            // Re-focus on the input field
-            document.getElementById('user_command').focus();
-        })
-        .catch(error => {
-            console.error(error);
-            gameStateContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
-            // Re-enable the submit button
-            submitButton.disabled = false;
-            submitButton.value = 'Submit';
-        });
+        // Re-focus on the input field
+        document.getElementById('user_command').focus();
+    })
+    .catch(error => {
+        console.error(error);
+        gameStateContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
+        // Re-enable the submit button
+        submitButton.disabled = false;
+        submitButton.value = 'Submit';
     });
+});
 
     // Event listener for command buttons using event delegation
     document.addEventListener('click', function(e) {

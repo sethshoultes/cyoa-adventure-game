@@ -198,6 +198,10 @@ function wp_adventure_game_shortcode() {
             include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
             ?>
         </div>
+        <div class="spinner" style="display: none;">
+            <div class="spinner-icon"></div>
+            <p>Generating content...</p>
+        </div>
         <form id="adventure-game-form">
             <label for="user_command">Enter your next action:</label>
             <input type="text" name="user_command" id="user_command" placeholder="e.g., 1, 2, explore" required />
@@ -241,10 +245,6 @@ function wp_adventure_game_shortcode() {
             echo '<p>No past adventures found.</p>';
         }
         ?>
-        <div class="spinner" style="display: none;">
-            <div class="spinner-icon"></div>
-            <p>Generating content...</p>
-        </div>
     </div>
 
     <script>

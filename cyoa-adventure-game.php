@@ -2,7 +2,7 @@
 /*
 Plugin Name: Text Adventure Game with OpenAI Streaming and User Accounts
 Plugin URI: https://smartwebutah.com
-Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play.
+Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character.
 Version: 1.0
 Author: Seth Shoultes
 Author URI: https://smartwebutah.com
@@ -49,7 +49,7 @@ function wp_adventure_game_handle_form_submissions() {
         AC: 15
         Level: 1
         Location: Daggerfall
-        Description: You find yourself in the streets of Daggerfall,. What will you do next?
+        Description: You find yourself in the streets of Daggerfall. What will you do next?
         Coins: 10
         Inventory: - Rusty Sword - Tattered Cloak - Healing Potion - Traveler's Backpack - Torch - Map of Daggerfall Kingdom
         Abilities: - Persuasion: 8 - Strength: 12 - Intelligence: 15 - Dexterity: 10 - Luck: 14
@@ -130,17 +130,26 @@ function wp_adventure_game_parse_state($state_text) {
             if (stripos($key, 'Possible Commands') !== false || stripos($key, 'Commands') !== false) {
                 $current_key = 'Possible Commands';
                 $parsed_state[$current_key] = [];
+            } elseif (stripos($key, 'Outcome') !== false) {
+                $current_key = 'Outcome';
+                $parsed_state[$current_key] = $value;
             } else {
                 $parsed_state[$key] = $value;
                 $current_key = $key;
             }
         } else {
-            // Append values for previous key (for multiline descriptions, commands)
-            if ($current_key) {
-                if ($current_key === 'Possible Commands') {
-                    $parsed_state[$current_key][] = $line;
-                } else {
-                    $parsed_state[$current_key] .= " $line";
+            // Check if the line contains a question and is followed by "Possible Commands"
+            if (preg_match('/\?$/', $line) && preg_match('/^Possible Commands/', $lines[array_search($line, $lines) + 1] ?? '')) {
+                // Append the question to the "Description" field
+                $parsed_state['Description'] .= ' ' . $line;
+            } else {
+                // Append values for previous key (for multiline descriptions, commands)
+                if ($current_key) {
+                    if ($current_key === 'Possible Commands') {
+                        $parsed_state[$current_key][] = $line;
+                    } else {
+                        $parsed_state[$current_key] .= " $line";
+                    }
                 }
             }
         }
@@ -166,7 +175,7 @@ function wp_adventure_game_shortcode() {
         ?>
         <form method="POST">
             <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
-        </form>
+       
         <?php
         return ob_get_clean();
     }
@@ -197,6 +206,12 @@ function wp_adventure_game_shortcode() {
         <form method="POST" style="margin-top: 10px;">
             <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
         </form>
+        </form>
+            <form method="POST" style="margin-top: 10px;">
+            <input type="hidden" name="clear_history" value="1">
+            <?php wp_nonce_field('clear_adventure_history', 'clear_history_nonce'); ?>
+            <input type="submit" value="Clear Adventure History" class="clear-history-button" onclick="return confirm('Are you sure you want to clear your adventure history? This action cannot be undone.');" />
+        </form>
         <h3>Your Past Adventures</h3>
         <?php
         // Get past games
@@ -214,10 +229,10 @@ function wp_adventure_game_shortcode() {
             foreach ($past_games as $game) {
                 // Highlight the current game
                 if ($game->ID == $current_game_id) {
-                    echo '<li><strong>Current Adventure (' . get_the_date('', $game) . ')</strong></li>';
+                    echo '<li><strong>Current Adventure (' . get_the_date('F j, Y g:i a', $game) . ')</strong></li>';
                 } else {
                     echo '<li>';
-                    echo '<a href="' . esc_url(add_query_arg('resume_game', $game->ID)) . '">Adventure from ' . esc_html(get_the_date('', $game)) . '</a>';
+                    echo '<a href="' . esc_url(add_query_arg('resume_game', $game->ID)) . '">Adventure from ' . esc_html(get_the_date('F j, Y g:i a', $game)) . '</a>';
                     echo '</li>';
                 }
             }
@@ -226,56 +241,72 @@ function wp_adventure_game_shortcode() {
             echo '<p>No past adventures found.</p>';
         }
         ?>
+        <div class="spinner" style="display: none;">
+            <div class="spinner-icon"></div>
+            <p>Generating content...</p>
+        </div>
     </div>
 
     <script>
     document.getElementById('adventure-game-form').addEventListener('submit', function(e) {
-        e.preventDefault();  // Prevent the form from submitting the normal way
-        var userCommand = document.getElementById('user_command').value.trim();
+    e.preventDefault();  // Prevent the form from submitting the normal way
+    var userCommand = document.getElementById('user_command').value.trim();
 
-        if (userCommand === '') {
-            alert('Please enter a command.');
-            return;
-        }
+    if (userCommand === '') {
+        alert('Please enter a command.');
+        return;
+    }
 
-        // Prepare the data to send
-        var data = new FormData();
-        data.append('action', 'wp_adventure_game_stream');  // Ensure this matches the registered AJAX action
-        data.append('user_command', userCommand);
+    // Prepare the data to send
+    var data = new FormData();
+    data.append('action', 'wp_adventure_game_stream');  // Ensure this matches the registered AJAX action
+    data.append('user_command', userCommand);
 
-        // Clear the input field
-        document.getElementById('user_command').value = '';
+    // Clear the input field
+    document.getElementById('user_command').value = '';
 
-        // Disable the submit button to prevent multiple submissions
-        var submitButton = document.querySelector('#adventure-game-form input[type="submit"]');
-        submitButton.disabled = true;
-        submitButton.value = 'Processing...';
+    // Disable the submit button to prevent multiple submissions
+    var submitButton = document.querySelector('#adventure-game-form input[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.value = 'Processing...';
 
-        // Prepare the game state display
-        var gameStateContainer = document.querySelector('.game-state');
-        if (!gameStateContainer) {
-            console.error('Element with class "game-state" not found.');
-            // Re-enable the submit button
-            submitButton.disabled = false;
-            submitButton.value = 'Submit';
-            return;
-        }
+    // Prepare the game state display
+    var gameStateContainer = document.querySelector('.game-state');
+    if (!gameStateContainer) {
+        console.error('Element with class "game-state" not found.');
+        // Re-enable the submit button
+        submitButton.disabled = false;
+        submitButton.value = 'Submit';
+        return;
+    }
 
-        fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-            method: 'POST',
-            body: data,
-            credentials: 'same-origin',
-        })
-        .then(response => response.text())
+    // Show the spinner
+    var spinner = document.querySelector('.spinner');
+    spinner.style.display = 'flex';
+
+
+    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin',
+    })
+    .then(response => response.text())
         .then(html => {
-             // Replace any Markdown-style bold (**) with <strong> HTML tags
+            // Replace any Markdown-style bold (**) with <strong> HTML tags
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
             // Strip out triple backticks if they exist in the response
             html = html.replace(/```/g, '');
             
-            // Replace only the game state content
-            gameStateContainer.innerHTML = html;
+            // Check if the new response content is the same as the existing content
+            if (gameStateContainer.innerHTML !== html) {
+                // Update the game state content only if it's different
+                gameStateContainer.innerHTML = html;
+            }
+
+
+            // Hide the spinner
+            spinner.style.display = 'none';
 
             // Re-enable the submit button
             submitButton.disabled = false;
@@ -287,6 +318,8 @@ function wp_adventure_game_shortcode() {
         .catch(error => {
             console.error(error);
             gameStateContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
+            // Hide the spinner
+            spinner.style.display = 'none';
             // Re-enable the submit button
             submitButton.disabled = false;
             submitButton.value = 'Submit';
@@ -323,6 +356,7 @@ function wp_adventure_game_stream_callback() {
     // Enable error reporting for debugging (disable in production)
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
+    // Log the start of the callback
     error_log('wp_adventure_game_stream_callback called');
 
     // Only allow logged-in users
@@ -358,7 +392,6 @@ function wp_adventure_game_stream_callback() {
 
     // Prepare prompt
     $prompt = "$current_state
-
 The player chose: $user_command. What happens next?";
 
     // OpenAI API details
@@ -380,7 +413,7 @@ The player chose: $user_command. What happens next?";
     
     2. The game output will always show 'Turn number', 'Time period of the day', 'Current day number', 'Weather', 'Health', 'XP', 'AC', 'Level', 'Location', 'Description', 'Coin', 'Inventory', 'Quest', 'Abilities', and 'Possible Commands'.
     
-    3. Always wait for the player’s next command.
+    3. Always wait for the player’s next command. Display the question in the 'Description' field.
     
     4. Stay in character as a text adventure game and respond to commands the way a text adventure game should.
     
@@ -480,7 +513,7 @@ The player chose: $user_command. What happens next?";
     **Abilities:** {abilities}  
     **Wearing:** {wearing}  
     **Wielding:** {wielding}  
-    Possible Commands:  
+    [Possible Commands:  ]
     1. {command1}  
     2. {command2}  
     3. {command3}  
@@ -554,14 +587,20 @@ The player chose: $user_command. What happens next?";
     $content = strip_tags($content, '<p><strong><em><br><ol><ul><li>');  // Allow basic HTML tags
 
 
-    // Update the game state in the database
+    // Append new content to the current game state
+    $updated_state = $current_state . "\n\n" . $content;
+
+    // Save the updated game state back to the post
     wp_update_post([
         'ID'           => $current_game_id,
-        'post_content' => $content,
+        'post_content' => $updated_state,
     ]);
 
-    // Parse the game state on the server side
-    $parsed_state = wp_adventure_game_parse_state($content);
+    // Parse the game state on the server side for display
+    $parsed_state = wp_adventure_game_parse_state($updated_state);
+    // Clear the stored "Outcome" field
+    unset($parsed_state['Outcome']);
+
 
     // Generate the updated HTML
     ob_start();
@@ -654,3 +693,228 @@ function wp_adventure_game_chatgpt_version_callback() {
     
     <?php
 }
+
+// Form processing function
+function wp_adventure_game_process_character_form() {
+    if (!is_user_logged_in() || !isset($_POST['adventure_game_action'])) {
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $redirect_url = remove_query_arg('message', wp_get_referer());
+
+    if ($_POST['adventure_game_action'] === 'save_character') {
+        if (!wp_verify_nonce($_POST['adventure_game_nonce'], 'adventure_game_action')) {
+            wp_safe_redirect(add_query_arg('message', 'invalid_nonce', $redirect_url));
+            exit;
+        }
+
+        $character_name = sanitize_text_field($_POST['character_name']);
+        $character_race = sanitize_text_field($_POST['character_race']);
+        $character_class = sanitize_text_field($_POST['character_class']);
+        $attributes = [
+            'Strength' => intval($_POST['strength']),
+            'Intelligence' => intval($_POST['intelligence']),
+            'Dexterity' => intval($_POST['dexterity']),
+            'Luck' => intval($_POST['luck']),
+        ];
+        $skills = isset($_POST['skills']) ? array_map('sanitize_text_field', $_POST['skills']) : [];
+        $backstory = sanitize_textarea_field($_POST['backstory']);
+
+        if (empty($character_name) || empty($character_race) || empty($character_class)) {
+            wp_safe_redirect(add_query_arg('message', 'missing_fields', $redirect_url));
+            exit;
+        }
+
+        $character_data = [
+            'Name' => $character_name,
+            'Race' => $character_race,
+            'Class' => $character_class,
+            'Attributes' => $attributes,
+            'Skills' => $skills,
+            'Backstory' => $backstory,
+        ];
+        update_user_meta($user_id, 'adventure_game_character', $character_data);
+
+        wp_safe_redirect(add_query_arg('message', 'character_saved', $redirect_url));
+        exit;
+    }
+
+    if ($_POST['adventure_game_action'] === 'reset_character') {
+        delete_user_meta($user_id, 'adventure_game_character');
+        wp_safe_redirect(add_query_arg('message', 'character_reset', $redirect_url));
+        exit;
+    }
+}
+add_action('init', 'wp_adventure_game_process_character_form');
+
+// Shortcode function
+function wp_adventure_game_character_shortcode() {
+    if (!is_user_logged_in()) {
+        return '<p>You must be logged in to manage your character.</p>';
+    }
+
+    $user_id = get_current_user_id();
+    $existing_character = get_user_meta($user_id, 'adventure_game_character', true);
+    $message = '';
+
+    if (isset($_GET['message'])) {
+        switch ($_GET['message']) {
+            case 'character_saved':
+                $message = '<p class="success">Character saved successfully.</p>';
+                break;
+            case 'character_reset':
+                $message = '<p class="success">Character has been reset.</p>';
+                break;
+            case 'missing_fields':
+                $message = '<p class="error">Please fill in all required fields.</p>';
+                break;
+            case 'invalid_nonce':
+                $message = '<p class="error">Invalid form submission.</p>';
+                break;
+        }
+    }
+
+    ob_start();
+    ?>
+    <div class="character-builder-container">
+        <?php echo $message; ?>
+        <h2><?php echo $existing_character ? 'Edit Your Character' : 'Create Your Character'; ?></h2>
+        <form method="POST" id="character-builder-form">
+            <?php wp_nonce_field('adventure_game_action', 'adventure_game_nonce'); ?>
+            <input type="hidden" name="adventure_game_action" value="save_character">
+
+            <label for="character_name">Name:</label>
+            <input type="text" id="character_name" name="character_name" value="<?php echo esc_attr($existing_character['Name'] ?? ''); ?>" required />
+
+     
+            <label for="character_race">Race:</label>
+            <select id="character_race" name="character_race" required>
+                <option value="">Select Race</option>
+                <option value="Human" <?php selected($existing_character['Race'] ?? '', 'Human'); ?>>Human</option>
+                <option value="Elf" <?php selected($existing_character['Race'] ?? '', 'Elf'); ?>>Elf</option>
+                <option value="Dwarf" <?php selected($existing_character['Race'] ?? '', 'Dwarf'); ?>>Dwarf</option>
+                <option value="Orc" <?php selected($existing_character['Race'] ?? '', 'Orc'); ?>>Orc</option>
+            </select>
+
+            <label for="character_class">Class:</label>
+            <select id="character_class" name="character_class" required>
+                <option value="">Select Class</option>
+                <option value="Warrior" <?php selected($existing_character['Class'] ?? '', 'Warrior'); ?>>Warrior</option>
+                <option value="Mage" <?php selected($existing_character['Class'] ?? '', 'Mage'); ?>>Mage</option>
+                <option value="Rogue" <?php selected($existing_character['Class'] ?? '', 'Rogue'); ?>>Rogue</option>
+                <option value="Cleric" <?php selected($existing_character['Class'] ?? '', 'Cleric'); ?>>Cleric</option>
+            </select>
+
+            <fieldset>
+                <legend>Attributes</legend>
+                <label for="strength">Strength:</label>
+                <input type="number" id="strength" name="strength" min="1" max="20" value="<?php echo esc_attr($existing_character['Attributes']['Strength'] ?? 10); ?>" required />
+
+                <label for="intelligence">Intelligence:</label>
+                <input type="number" id="intelligence" name="intelligence" min="1" max="20" value="<?php echo esc_attr($existing_character['Attributes']['Intelligence'] ?? 10); ?>" required />
+
+                <label for="dexterity">Dexterity:</label>
+                <input type="number" id="dexterity" name="dexterity" min="1" max="20" value="<?php echo esc_attr($existing_character['Attributes']['Dexterity'] ?? 10); ?>" required />
+
+                <label for="luck">Luck:</label>
+                <input type="number" id="luck" name="luck" min="1" max="20" value="<?php echo esc_attr($existing_character['Attributes']['Luck'] ?? 10); ?>" required />
+            </fieldset>
+
+            <fieldset>
+                <legend>Skills</legend>
+                <label><input type="checkbox" name="skills[]" value="Persuasion" <?php if (in_array('Persuasion', $existing_character['Skills'] ?? [])) echo 'checked'; ?> /> Persuasion</label>
+                <label><input type="checkbox" name="skills[]" value="Archery" <?php if (in_array('Archery', $existing_character['Skills'] ?? [])) echo 'checked'; ?> /> Archery</label>
+                <label><input type="checkbox" name="skills[]" value="Stealth" <?php if (in_array('Stealth', $existing_character['Skills'] ?? [])) echo 'checked'; ?> /> Stealth</label>
+                <label><input type="checkbox" name="skills[]" value="Alchemy" <?php if (in_array('Alchemy', $existing_character['Skills'] ?? [])) echo 'checked'; ?> /> Alchemy</label>
+            </fieldset>
+
+            <label for="backstory">Backstory:</label>
+            <textarea id="backstory" name="backstory" rows="5" placeholder="Tell us about your character's history..."><?php echo esc_textarea($existing_character['Backstory'] ?? ''); ?></textarea>
+
+            <input type="submit" value="Save Character" class="save-changes-button" />
+        </form>
+
+        <?php if ($existing_character): ?>
+            <form method="POST" style="margin-top: 10px;">
+                <input type="hidden" name="adventure_game_action" value="reset_character">
+                <?php wp_nonce_field('adventure_game_action', 'adventure_game_nonce'); ?>
+                <input type="submit" value="Reset Character" class="reset-character-button" />
+            </form>
+        <?php endif; ?>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('wp_adventure_game_character', 'wp_adventure_game_character_shortcode');
+
+
+function wp_adventure_game_history_shortcode() {
+    if (!is_user_logged_in()) {
+        return '<p>You must be logged in to view your adventure history.</p>';
+    }
+
+    // Get the current user ID
+    $user_id = get_current_user_id();
+
+    // Query all adventure posts for this user
+    $args = [
+        'post_type'      => 'wp_adventure_game',
+        'author'         => $user_id,
+        'posts_per_page' => -1, // Retrieve all adventures
+        'post_status'    => 'publish',
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ];
+    $adventure_query = new WP_Query($args);
+
+    ob_start();
+
+    if ($adventure_query->have_posts()) {
+        echo '<h2>Your Adventure History</h2>';
+        echo '<div class="adventure-history">';
+        while ($adventure_query->have_posts()) {
+            $adventure_query->the_post();
+            ?>
+            <div class="adventure-item">
+                <h3><?php the_title(); ?></h3>
+                <p class="adventure-date"><?php echo get_the_date('F j, Y  g:i a'); ?> at <?php echo get_the_time('g:i a'); ?></p>
+                <div class="adventure-content">
+                    <?php the_content(); ?>
+                </div>
+            </div>
+            <?php
+        }
+        echo '</div>';
+    } else {
+        echo '<p>No adventure history found.</p>';
+    }
+
+    wp_reset_postdata();
+
+    return ob_get_clean();
+}
+add_shortcode('adventure_game_history', 'wp_adventure_game_history_shortcode');
+
+function wp_adventure_game_clear_history() {
+    if (isset($_POST['clear_history']) && wp_verify_nonce($_POST['clear_history_nonce'], 'clear_adventure_history')) {
+        $user_id = get_current_user_id();
+
+        $args = [
+            'post_type'      => 'wp_adventure_game',
+            'author'         => $user_id,
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+        ];
+
+        $posts = get_posts($args);
+
+        foreach ($posts as $post) {
+            wp_delete_post($post->ID, true);
+        }
+
+        wp_safe_redirect(remove_query_arg('clear_history'));
+        exit;
+    }
+}
+add_action('template_redirect', 'wp_adventure_game_clear_history');

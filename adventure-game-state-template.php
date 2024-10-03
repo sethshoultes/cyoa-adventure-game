@@ -47,7 +47,7 @@ if ($character) {
     <p><strong>AC:</strong> <?php echo esc_html($parsed_state['AC'] ?? ''); ?></p>
     <p><strong>Level:</strong> <?php echo esc_html($parsed_state['Level'] ?? ''); ?></p>
     <p><strong>Location:</strong> <?php echo esc_html($parsed_state['Location'] ?? ''); ?></p>
-    <p><strong>Coin:</strong> <?php echo esc_html($parsed_state['Coin'] ?? ''); ?></p>
+    <p><strong>Coins:</strong> <?php echo esc_html($parsed_state['Coins'] ?? ''); ?></p>
     <p><strong>Quest:</strong> <?php echo esc_html($parsed_state['Quest'] ?? ''); ?></p>
     <p><strong>Inventory:</strong> <?php echo esc_html($parsed_state['Inventory'] ?? ''); ?></p>
     <p><strong>Abilities:</strong> <?php echo esc_html($parsed_state['Abilities'] ?? ''); ?></p>
@@ -83,6 +83,12 @@ if ($character) {
     <h3>Description</h3>
     <p><?php echo nl2br(esc_html($parsed_state['Description'] ?? '')); ?></p>
 </div>
+<?php if (isset($parsed_state['Outcome'])): ?>
+    <div class="game-outcome">
+        <h3>Outcome</h3>
+        <p><?php echo nl2br(esc_html($parsed_state['Outcome'])); ?></p>
+    </div>
+<?php endif; ?>
 
 <?php if (!empty($parsed_state['Possible Commands'])): ?>
     <div class="game-commands">

@@ -2,7 +2,7 @@
 /*
 Plugin Name: Text Adventure Game with OpenAI Streaming and User Accounts
 Plugin URI: https://smartwebutah.com
-Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play.
+Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character.
 Version: 1.0
 Author: Seth Shoultes
 Author URI: https://smartwebutah.com
@@ -323,6 +323,7 @@ function wp_adventure_game_stream_callback() {
     // Enable error reporting for debugging (disable in production)
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
+    // Log the start of the callback
     error_log('wp_adventure_game_stream_callback called');
 
     // Only allow logged-in users
@@ -358,7 +359,6 @@ function wp_adventure_game_stream_callback() {
 
     // Prepare prompt
     $prompt = "$current_state
-
 The player chose: $user_command. What happens next?";
 
     // OpenAI API details
@@ -554,14 +554,17 @@ The player chose: $user_command. What happens next?";
     $content = strip_tags($content, '<p><strong><em><br><ol><ul><li>');  // Allow basic HTML tags
 
 
-    // Update the game state in the database
+    // Append new content to the current game state
+    $updated_state = $current_state . "\n\n" . $content;
+
+    // Save the updated game state back to the post
     wp_update_post([
         'ID'           => $current_game_id,
-        'post_content' => $content,
+        'post_content' => $updated_state,
     ]);
 
-    // Parse the game state on the server side
-    $parsed_state = wp_adventure_game_parse_state($content);
+    // Parse the game state on the server side for display
+    $parsed_state = wp_adventure_game_parse_state($updated_state);
 
     // Generate the updated HTML
     ob_start();
@@ -808,3 +811,51 @@ function wp_adventure_game_character_shortcode() {
     return ob_get_clean();
 }
 add_shortcode('wp_adventure_game_character', 'wp_adventure_game_character_shortcode');
+
+
+function wp_adventure_game_history_shortcode() {
+    if (!is_user_logged_in()) {
+        return '<p>You must be logged in to view your adventure history.</p>';
+    }
+
+    // Get the current user ID
+    $user_id = get_current_user_id();
+
+    // Query all adventure posts for this user
+    $args = [
+        'post_type'      => 'wp_adventure_game',
+        'author'         => $user_id,
+        'posts_per_page' => -1, // Retrieve all adventures
+        'post_status'    => 'publish',
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ];
+    $adventure_query = new WP_Query($args);
+
+    ob_start();
+
+    if ($adventure_query->have_posts()) {
+        echo '<h2>Your Adventure History</h2>';
+        echo '<ul>';
+        while ($adventure_query->have_posts()) {
+            $adventure_query->the_post();
+            ?>
+            <li>
+                <h3><?php the_title(); ?> (<?php echo get_the_date(); ?>)</h3>
+                <div class="adventure-content">
+                    <?php the_content(); ?>
+                </div>
+                <hr />
+            </li>
+            <?php
+        }
+        echo '</ul>';
+    } else {
+        echo '<p>No adventure history found.</p>';
+    }
+
+    wp_reset_postdata();
+
+    return ob_get_clean();
+}
+add_shortcode('adventure_game_history', 'wp_adventure_game_history_shortcode');

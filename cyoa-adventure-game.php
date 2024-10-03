@@ -571,6 +571,9 @@ The player chose: $user_command. What happens next?";
 
     // Parse the game state on the server side for display
     $parsed_state = wp_adventure_game_parse_state($updated_state);
+    // Clear the stored "Outcome" field
+    unset($parsed_state['Outcome']);
+
 
     // Generate the updated HTML
     ob_start();

@@ -49,7 +49,7 @@ function wp_adventure_game_handle_form_submissions() {
         AC: 15
         Level: 1
         Location: Daggerfall
-        Description: You find yourself in the streets of Daggerfall,. What will you do next?
+        Description: You find yourself in the streets of Daggerfall. What will you do next?
         Coins: 10
         Inventory: - Rusty Sword - Tattered Cloak - Healing Potion - Traveler's Backpack - Torch - Map of Daggerfall Kingdom
         Abilities: - Persuasion: 8 - Strength: 12 - Intelligence: 15 - Dexterity: 10 - Luck: 14
@@ -138,12 +138,18 @@ function wp_adventure_game_parse_state($state_text) {
                 $current_key = $key;
             }
         } else {
-            // Append values for previous key (for multiline descriptions, commands)
-            if ($current_key) {
-                if ($current_key === 'Possible Commands') {
-                    $parsed_state[$current_key][] = $line;
-                } else {
-                    $parsed_state[$current_key] .= " $line";
+            // Check if the line contains a question and is followed by "Possible Commands"
+            if (preg_match('/\?$/', $line) && preg_match('/^Possible Commands/', $lines[array_search($line, $lines) + 1] ?? '')) {
+                // Append the question to the "Description" field
+                $parsed_state['Description'] .= ' ' . $line;
+            } else {
+                // Append values for previous key (for multiline descriptions, commands)
+                if ($current_key) {
+                    if ($current_key === 'Possible Commands') {
+                        $parsed_state[$current_key][] = $line;
+                    } else {
+                        $parsed_state[$current_key] .= " $line";
+                    }
                 }
             }
         }
@@ -169,7 +175,7 @@ function wp_adventure_game_shortcode() {
         ?>
         <form method="POST">
             <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
-        </form>
+       
         <?php
         return ob_get_clean();
     }
@@ -200,6 +206,12 @@ function wp_adventure_game_shortcode() {
         <form method="POST" style="margin-top: 10px;">
             <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
         </form>
+        </form>
+            <form method="POST" style="margin-top: 10px;">
+            <input type="hidden" name="clear_history" value="1">
+            <?php wp_nonce_field('clear_adventure_history', 'clear_history_nonce'); ?>
+            <input type="submit" value="Clear Adventure History" class="clear-history-button" onclick="return confirm('Are you sure you want to clear your adventure history? This action cannot be undone.');" />
+        </form>
         <h3>Your Past Adventures</h3>
         <?php
         // Get past games
@@ -217,10 +229,10 @@ function wp_adventure_game_shortcode() {
             foreach ($past_games as $game) {
                 // Highlight the current game
                 if ($game->ID == $current_game_id) {
-                    echo '<li><strong>Current Adventure (' . get_the_date('', $game) . ')</strong></li>';
+                    echo '<li><strong>Current Adventure (' . get_the_date('F j, Y g:i a', $game) . ')</strong></li>';
                 } else {
                     echo '<li>';
-                    echo '<a href="' . esc_url(add_query_arg('resume_game', $game->ID)) . '">Adventure from ' . esc_html(get_the_date('', $game)) . '</a>';
+                    echo '<a href="' . esc_url(add_query_arg('resume_game', $game->ID)) . '">Adventure from ' . esc_html(get_the_date('F j, Y g:i a', $game)) . '</a>';
                     echo '</li>';
                 }
             }
@@ -229,6 +241,10 @@ function wp_adventure_game_shortcode() {
             echo '<p>No past adventures found.</p>';
         }
         ?>
+        <div class="spinner" style="display: none;">
+            <div class="spinner-icon"></div>
+            <p>Generating content...</p>
+        </div>
     </div>
 
     <script>
@@ -264,40 +280,51 @@ function wp_adventure_game_shortcode() {
         return;
     }
 
+    // Show the spinner
+    var spinner = document.querySelector('.spinner');
+    spinner.style.display = 'flex';
+
+
     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
         method: 'POST',
         body: data,
         credentials: 'same-origin',
     })
     .then(response => response.text())
-    .then(html => {
-        // Replace any Markdown-style bold (**) with <strong> HTML tags
-        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        .then(html => {
+            // Replace any Markdown-style bold (**) with <strong> HTML tags
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-        // Strip out triple backticks if they exist in the response
-        html = html.replace(/```/g, '');
-        
-        // Check if the new response content is the same as the existing content
-        if (gameStateContainer.innerHTML !== html) {
-            // Update the game state content only if it's different
-            gameStateContainer.innerHTML = html;
-        }
+            // Strip out triple backticks if they exist in the response
+            html = html.replace(/```/g, '');
+            
+            // Check if the new response content is the same as the existing content
+            if (gameStateContainer.innerHTML !== html) {
+                // Update the game state content only if it's different
+                gameStateContainer.innerHTML = html;
+            }
 
-        // Re-enable the submit button
-        submitButton.disabled = false;
-        submitButton.value = 'Submit';
 
-        // Re-focus on the input field
-        document.getElementById('user_command').focus();
-    })
-    .catch(error => {
-        console.error(error);
-        gameStateContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
-        // Re-enable the submit button
-        submitButton.disabled = false;
-        submitButton.value = 'Submit';
+            // Hide the spinner
+            spinner.style.display = 'none';
+
+            // Re-enable the submit button
+            submitButton.disabled = false;
+            submitButton.value = 'Submit';
+
+            // Re-focus on the input field
+            document.getElementById('user_command').focus();
+        })
+        .catch(error => {
+            console.error(error);
+            gameStateContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
+            // Hide the spinner
+            spinner.style.display = 'none';
+            // Re-enable the submit button
+            submitButton.disabled = false;
+            submitButton.value = 'Submit';
+        });
     });
-});
 
     // Event listener for command buttons using event delegation
     document.addEventListener('click', function(e) {
@@ -386,7 +413,7 @@ The player chose: $user_command. What happens next?";
     
     2. The game output will always show 'Turn number', 'Time period of the day', 'Current day number', 'Weather', 'Health', 'XP', 'AC', 'Level', 'Location', 'Description', 'Coin', 'Inventory', 'Quest', 'Abilities', and 'Possible Commands'.
     
-    3. Always wait for the player’s next command.
+    3. Always wait for the player’s next command. Display the question in the 'Description' field.
     
     4. Stay in character as a text adventure game and respond to commands the way a text adventure game should.
     
@@ -486,7 +513,7 @@ The player chose: $user_command. What happens next?";
     **Abilities:** {abilities}  
     **Wearing:** {wearing}  
     **Wielding:** {wielding}  
-    Possible Commands:  
+    [Possible Commands:  ]
     1. {command1}  
     2. {command2}  
     3. {command3}  
@@ -845,20 +872,20 @@ function wp_adventure_game_history_shortcode() {
 
     if ($adventure_query->have_posts()) {
         echo '<h2>Your Adventure History</h2>';
-        echo '<ul>';
+        echo '<div class="adventure-history">';
         while ($adventure_query->have_posts()) {
             $adventure_query->the_post();
             ?>
-            <li>
-                <h3><?php the_title(); ?> (<?php echo get_the_date(); ?>)</h3>
+            <div class="adventure-item">
+                <h3><?php the_title(); ?></h3>
+                <p class="adventure-date"><?php echo get_the_date('F j, Y  g:i a'); ?> at <?php echo get_the_time('g:i a'); ?></p>
                 <div class="adventure-content">
                     <?php the_content(); ?>
                 </div>
-                <hr />
-            </li>
+            </div>
             <?php
         }
-        echo '</ul>';
+        echo '</div>';
     } else {
         echo '<p>No adventure history found.</p>';
     }
@@ -868,3 +895,26 @@ function wp_adventure_game_history_shortcode() {
     return ob_get_clean();
 }
 add_shortcode('adventure_game_history', 'wp_adventure_game_history_shortcode');
+
+function wp_adventure_game_clear_history() {
+    if (isset($_POST['clear_history']) && wp_verify_nonce($_POST['clear_history_nonce'], 'clear_adventure_history')) {
+        $user_id = get_current_user_id();
+
+        $args = [
+            'post_type'      => 'wp_adventure_game',
+            'author'         => $user_id,
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+        ];
+
+        $posts = get_posts($args);
+
+        foreach ($posts as $post) {
+            wp_delete_post($post->ID, true);
+        }
+
+        wp_safe_redirect(remove_query_arg('clear_history'));
+        exit;
+    }
+}
+add_action('template_redirect', 'wp_adventure_game_clear_history');

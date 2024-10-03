@@ -83,6 +83,12 @@ if ($character) {
     <h3>Description</h3>
     <p><?php echo nl2br(esc_html($parsed_state['Description'] ?? '')); ?></p>
 </div>
+<?php if (isset($parsed_state['Outcome'])): ?>
+    <div class="game-outcome">
+        <h3>Outcome</h3>
+        <p><?php echo nl2br(esc_html($parsed_state['Outcome'])); ?></p>
+    </div>
+<?php endif; ?>
 
 <?php if (!empty($parsed_state['Possible Commands'])): ?>
     <div class="game-commands">

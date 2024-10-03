@@ -130,6 +130,9 @@ function wp_adventure_game_parse_state($state_text) {
             if (stripos($key, 'Possible Commands') !== false || stripos($key, 'Commands') !== false) {
                 $current_key = 'Possible Commands';
                 $parsed_state[$current_key] = [];
+            } elseif (stripos($key, 'Outcome') !== false) {
+                $current_key = 'Outcome';
+                $parsed_state[$current_key] = $value;
             } else {
                 $parsed_state[$key] = $value;
                 $current_key = $key;

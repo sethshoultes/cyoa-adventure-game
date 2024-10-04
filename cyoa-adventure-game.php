@@ -320,36 +320,18 @@ function wp_adventure_game_handle_form_submissions() {
     if (isset($_POST['new_adventure'])) {
         // Check if custom parameters are passed via the shortcode
         $game_state_id = isset($_POST['game_state']) ? intval($_POST['game_state']) : null;
-        $role_id = isset($_POST['role']) ? intval($_POST['role']) : null;
+        //$role_id = isset($_POST['role']) ? intval($_POST['role']) : null;//Not currently using roles in this function
 
-        // If no game state is passed, load the default game state CPT
-        if (!$game_state_id) {
-            $default_game_state_id = get_option('wp_adventure_game_default_state_id'); // Saved during plugin activation
-            if ($default_game_state_id) {
-                $game_state_id = $default_game_state_id;
-            }
-        }
-
-        // If no role is passed, load the default role CPT
-        if (!$role_id) {
-            $default_role_id = get_option('wp_adventure_game_default_role_id'); // Saved during plugin activation
-            if ($default_role_id) {
-                $role_id = $default_role_id;
-            }
-        }
-
-        // Get the Game State from the CPT if provided
+        // Check if the game state ID exists and is valid, otherwise use the default constant
         if ($game_state_id) {
             $game_state_post = get_post($game_state_id);
             if ($game_state_post && $game_state_post->post_type === 'game_state') {
                 $new_game_state = $game_state_post->post_content;
             } else {
-                // Fallback to default game state if the provided ID is invalid
-                $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE;
+                $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
             }
         } else {
-            // Fallback to default game state if no ID is provided
-            $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE;
+            $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
         }
 
         // Create the new game as a post
@@ -389,31 +371,26 @@ function wp_adventure_game_handle_form_submissions() {
         }
     }
 }
-
-
 add_action('template_redirect', 'wp_adventure_game_handle_form_submissions');
 
 // Add Shortcode for Adventure Game
 function wp_adventure_game_shortcode($atts) {
+    // Check if the user is logged in
+    if (!is_user_logged_in()) {
+        return '<p>You must be logged in to play the adventure game.</p>';
+    }
+    //Get the current user ID
+    $user_id = get_current_user_id();
 
+    // Get the current game ID from user meta
+    $current_game_id = get_user_meta($user_id, 'wp_adventure_game_current', true);
+    
     // Extract attributes from shortcode
     $atts = shortcode_atts([
         'game_state' => '', // Custom game state ID
         'role' => '',       // Custom role ID
     ], $atts, 'wp_adventure_game');
-
-    // Check if the user is logged in
-    if (!is_user_logged_in()) {
-        return '<p>You must be logged in to play the adventure game.</p>';
-    }
-
-    $user_id = get_current_user_id();
-
-    // Get the current game ID from user meta
-    $current_game_id = get_user_meta($user_id, 'wp_adventure_game_current', true);
-
-
-
+    
     // Fetch the default game state and role if no shortcode parameters are passed
     if (empty($atts['game_state'])) {
         $default_game_state = get_posts([
@@ -428,28 +405,15 @@ function wp_adventure_game_shortcode($atts) {
         $new_game_state = $game_state_post ? $game_state_post->post_content : 'Default game state';
     }
 
-    if (empty($atts['role'])) {
-        $default_game_role = get_posts([
-            'post_type' => 'game_role',
-            'title'     => 'Default Game Role',
-            'post_status' => 'publish',
-            'numberposts' => 1,
-        ]);
-        $role = !empty($default_game_role) ? $default_game_role[0]->post_content : 'Default GPT Role';
-    } else {
-        $role_post = get_post($atts['role']);
-        $role = $role_post ? $role_post->post_content : 'Default GPT Role';
-        // Save the role in user meta
-        //update_user_meta($user_id, 'wp_adventure_game_role', $role);
-    }
-
     // If there's no current game, prompt to start a new one
     if (!$current_game_id) {
         ob_start();
         ?>
         <form method="POST">
+            <input type="hidden" name="game_state" value="<?php echo esc_attr($atts['game_state_id']); ?>" />
+            <input type="hidden" name="role" value="<?php echo esc_attr($atts['role_id']); ?>" />
             <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
-       
+        </form>
         <?php
         return ob_get_clean();
     }
@@ -482,8 +446,11 @@ function wp_adventure_game_shortcode($atts) {
             <input type="submit" value="Submit" />
         </form>
         <form method="POST" style="margin-top: 10px;">
+            <input type="hidden" name="game_state" value="<?php echo esc_attr($atts['game_state']); ?>" />
+            <input type="hidden" name="role" value="<?php echo esc_attr($atts['role']); ?>" />
             <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
         </form>
+       
         </form>
             <form method="POST" style="margin-top: 10px;">
             <input type="hidden" name="clear_history" value="1">
@@ -622,8 +589,6 @@ function wp_adventure_game_shortcode($atts) {
 }
 add_shortcode('wp_adventure_game', 'wp_adventure_game_shortcode');
 
-
-
 // Parse the Game State
 function wp_adventure_game_parse_state($state_text) {
     // Remove Markdown-like formatting (e.g., **bold**)
@@ -742,7 +707,7 @@ function wp_adventure_game_stream_callback() {
         }
     }
 
-    // Get the Role from the CPT
+    // Check if the role ID exists and is valid, otherwise use the default constant
     if ($role_id) {
         $role_post = get_post($role_id);
         if ($role_post && $role_post->post_type === 'role') {
@@ -768,9 +733,7 @@ function wp_adventure_game_stream_callback() {
         wp_die();
     }
 
-    // Prepare API request
-   $role = WP_ADVENTURE_GAME_DEFAULT_ROLE;
-
+    // Prepare API request data
     $postData = [
         'model' => $chatgpt_version,
         'messages' => [
@@ -783,7 +746,7 @@ function wp_adventure_game_stream_callback() {
                 'content' => $prompt
             ]
         ],
-        'temperature' => 0.7,
+        'temperature' => 0.5,
         // 'stream' => true, // Removed for non-streaming
     ];
 

@@ -15,32 +15,130 @@ function wp_adventure_game_enqueue_styles() {
 }
 add_action('wp_enqueue_scripts', 'wp_adventure_game_enqueue_styles');
 
-// Register Custom Post Type for Adventure Games
-function register_wp_adventure_game_post_type() {
-    register_post_type('wp_adventure_game', [
-        'labels' => [
-            'name' => 'Adventure Games',
-            'singular_name' => 'Adventure Game',
-        ],
-        'public' => false,
-        'has_archive' => false,
-        'rewrite' => false,
-        'supports' => ['title', 'editor', 'author'],
-    ]);
+// Define constants for the default role and game state
+if (!defined('WP_ADVENTURE_GAME_DEFAULT_ROLE')) {
+    define('WP_ADVENTURE_GAME_DEFAULT_ROLE', "Please perform the function of a hilarious, outlandish, text adventure game based on the D&D 5e and the Elder Scrolls, where flatulence (farts) are a super power, following the rules listed below:
+
+    Presentation Rules:
+    
+    1. Play the game in turns, starting with you.
+    
+    2. The game output will always show 'Turn number', 'Time period of the day', 'Current day number', 'Weather', 'Health', 'XP', 'AC', 'Level', 'Location', 'Description', 'Coin', 'Inventory', 'Quest', 'Abilities', and 'Possible Commands'.
+    
+    3. Always wait for the player’s next command. Display the question in the 'Description' field.
+    
+    4. Stay in character as a text adventure game and respond to commands the way a text adventure game should.
+    
+    5. The ‘Location’ must be a place in the D&D 5e and the Elder Scrolls universe.
+    
+    6. [IMPORTANT]The ‘Description’ must stay between 3 to 10 sentences.[/IMPORTANT]
+    
+    7. Increase the value for ‘Turn number’ by +1 every time it’s your turn.
+    
+    8. ‘Time period of day’ must progress naturally after a few turns.
+    
+    9. Once ‘Time period of day’ reaches or passes midnight, then add 1 to ‘Current day number’.
+    
+    10. Change the ‘Weather’ to reflect ‘Description’ and whatever environment the player is in the game.
+    
+    Fundamental Game Mechanics:
+    
+    1. Determine ‘AC’ using Traveller 5th Edition rules.
+    
+    2. Generate ‘Abilities’ before the game starts. ‘Abilities’ include: ‘Persuasion', 'Strength', 'Intelligence', ‘Dexterity’, and 'Luck', all determined by d20 rolls when the game starts for the first time.
+    
+    3. Start the game with 20/20 for ‘Health’, with 20 being the maximum health. Eating food, drinking water, or sleeping will restore health.
+    
+    4. Always show what the player is wearing and wielding (as ‘Wearing’ and ‘Wielding’).
+    
+    5. Display ‘Game Over’ if ‘Health’ falls to 0 or lower.
+    
+    6. The player must choose all commands, and the game will list 7 of them at all times under ‘Commands’, and [IMPORTANT]assign them a number 1-7[/IMPORTANT] that I can type to choose that option, and vary the possible selection depending on the actual scene and characters being interacted with.
+    
+    7. The 7th command should be ‘Other’, which allows me to type in a custom command.
+    
+    8. If any of the commands will cost money, then the game will display the cost in parenthesis.
+    
+    9. Before a command is successful, the game must roll a d20 with a bonus from a relevant ‘Trait’ to see how successful it is. Determine the bonus by dividing the trait by 3.
+    
+    10. If an action is unsuccessful, respond with a relevant consequence.
+    
+    11. Always display the result of a d20 roll before the rest of the output.
+    
+    12. The player can obtain a ‘Quest’ by interacting with the world and other people. The ‘Quest’ will also show what needs to be done to complete it.
+    
+    13. The only currency in this game is Coin.
+    
+    14. The value of ‘Coin’ must never be a negative integer.
+    
+    15. The player can not spend more than the total value of ‘Coin’.
+    
+    Rules for Setting:
+    
+    1. Use the world of D&D 5e and the Elder Scrolls as inspiration for the game world. Import whatever weapons, villains, and items that the Universe has.
+    
+    2. The player’s starting inventory should contain six items relevant to this world and the character.
+    
+    3. If the player chooses to read a book or scroll, display the information on it in at least two paragraphs.
+    
+    4. The game world will be populated by interactive NPCs. Whenever these NPCs speak, put the dialogue in quotation marks.
+    
+    5. Completing a quest adds to my XP.
+    
+    Combat and Magic Rules:
+    
+    1. Import magic spells, comedy, and farts into this game from D&D 5e and the Elder Scrolls.
+
+    2. Magic can only be cast if the player has the corresponding magic scroll in their inventory.
+    
+    3. Using magic will drain the player character’s health. More powerful mogic will drain more health.
+    
+    4. Combat should be handled in rounds, roll attacks for the NPCs each round.
+    
+    5. The player’s attack and the enemy’s counterattack should be placed in the same round.
+    
+    6. Always show how much damage is dealt when the player receives damage.
+    
+    7. Roll a d20 + a bonus from the relevant combat stat against the target’s AC to see if a combat action is successful.
+    
+    8. Who goes first in combat is determined by initiative. Use D&D 5e initiative rules.
+    
+    9. Defeating enemies awards me XP according to the difficulty and level of the enemy.
+    
+    Refer back to these rules after every prompt.
+    
+    [IMPORTANT]Fill in the following template:
+
+    **Turn number:** {turn_number}  
+    **Time period of the day:** {time_period}  
+    **Current day number:** {day_number}  
+    **Weather:** {weather}  
+    **Health:** {health}  
+    **XP:** {xp}  
+    **AC:** {ac}  
+    **Level:** {level}  
+    **Location:** {location}  
+    **Description:** {description}  
+    **Coin:** {coin}  
+    **Inventory:** {inventory}  
+    **Quest:** {quest}  
+    **Abilities:** {abilities}  
+    **Wearing:** {wearing}  
+    **Wielding:** {wielding}  
+    [Possible Commands:  ]
+    1. {command1}  
+    2. {command2}  
+    3. {command3}  
+    4. {command4}  
+    5. {command5}  
+    6. {command6}  
+    7. Other
+    [/IMPORTANT]
+     Start Game.");
 }
-add_action('init', 'register_wp_adventure_game_post_type');
 
-// Handle Form Submissions and Redirects
-function wp_adventure_game_handle_form_submissions() {
-    if (!is_user_logged_in()) {
-        return;
-    }
-
-    $user_id = get_current_user_id();
-
-    // Handle Starting a New Game
-    if (isset($_POST['new_adventure'])) {
-        $new_game_state = "Turn number: 1
+if (!defined('WP_ADVENTURE_GAME_DEFAULT_STATE')) {
+    define('WP_ADVENTURE_GAME_DEFAULT_STATE', "Turn number: 1
         Time period of the day: Morning
         Current day number: 1
         Weather: Clear
@@ -61,9 +159,200 @@ function wp_adventure_game_handle_form_submissions() {
         4. Check your equipment before leaving
         5. Write in your journal about the stories you heard
         6. Visit the local blacksmith to inquire about weapon upgrades
-        7. Other";// Initial game state
+        7. Other");
+}
 
-        // Save the New Game State as a New Game
+function register_adventure_game_cpts() {
+    
+    // Register Adventure Game CPT
+    //This post type will be used to store the game state for each adventure game.
+    register_post_type('wp_adventure_game', [
+        'labels' => [
+            'name' => 'Adventure Games',
+            'singular_name' => 'Adventure Game',
+        ],
+        'public' => false,
+        'has_archive' => false,
+        'rewrite' => false,
+        'supports' => ['title', 'editor', 'author'],
+    ]);
+    
+    // Register Game State CPT
+    register_post_type('game_state', [
+        'labels' => [
+            'name' => 'Game States',
+            'singular_name' => 'Game State',
+        ],
+        'public' => true,
+        'has_archive' => false,
+        'rewrite' => ['slug' => 'game-state'],
+        'supports' => ['title', 'editor'],
+    ]);
+
+    // Register Role CPT
+    register_post_type('game_role', [
+        'labels' => [
+            'name' => 'Game Roles',
+            'singular_name' => 'Game Role',
+        ],
+        'public' => true,
+        'has_archive' => false,
+        'rewrite' => ['slug' => 'game-role'],
+        'supports' => ['title', 'editor'],
+    ]);
+
+    
+}
+add_action('init', 'register_adventure_game_cpts');
+
+// Register Custom Post Type for Game State
+function wp_adventure_game_register_custom_post_types() {
+    // Game State Custom Post Type
+    $game_state_labels = [
+        'name' => 'Game States',
+        'singular_name' => 'Game State',
+        'menu_name' => 'Game States',
+        'name_admin_bar' => 'Game State',
+        'add_new' => 'Add New',
+        'add_new_item' => 'Add New Game State',
+        'new_item' => 'New Game State',
+        'edit_item' => 'Edit Game State',
+        'view_item' => 'View Game State',
+        'all_items' => 'All Game States',
+        'search_items' => 'Search Game States',
+        'not_found' => 'No Game States found.',
+    ];
+
+    $game_state_args = [
+        'labels' => $game_state_labels,
+        'public' => true,
+        'show_in_menu' => true,
+        'supports' => ['title', 'editor'],
+        'menu_icon' => 'dashicons-clipboard',
+        'has_archive' => true,
+    ];
+
+    register_post_type('game_state', $game_state_args);
+
+    // Role Custom Post Type
+    $role_labels = [
+        'name' => 'Game Roles',
+        'singular_name' => 'Game Role',
+        'menu_name' => 'Game Roles',
+        'name_admin_bar' => 'Game Role',
+        'add_new' => 'Add New',
+        'add_new_item' => 'Add New Game Role',
+        'new_item' => 'New Game Role',
+        'edit_item' => 'Edit Game Role',
+        'view_item' => 'View Game Role',
+        'all_items' => 'All Game Roles',
+        'search_items' => 'Search Game Roles',
+        'not_found' => 'No Game Roles found.',
+    ];
+
+    $role_args = [
+        'labels' => $role_labels,
+        'public' => true,
+        'show_in_menu' => true,
+        'supports' => ['title', 'editor'],
+        'menu_icon' => 'dashicons-groups',
+        'has_archive' => true,
+    ];
+
+    register_post_type('game_role', $role_args);
+}
+add_action('init', 'wp_adventure_game_register_custom_post_types');
+
+
+// Function to create default game state and role when the plugin is activated
+function wp_adventure_game_create_default_posts() {
+    // Check if the default game state already exists
+    $default_game_state = get_posts([
+        'post_type' => 'game_state',
+        'title'     => 'Default Game State',
+        'post_status' => 'publish',
+        'numberposts' => 1,
+    ]);
+
+    if (empty($default_game_state)) {
+        // Create default game state
+        $new_game_state_id = wp_insert_post([
+            'post_title'   => 'Default Game State',
+            'post_content' => "",// Initial game state
+            'post_status'  => 'publish',
+            'post_type'    => 'game_state',
+        ]);
+    }
+
+    // Check if the default role already exists
+    $default_game_role = get_posts([
+        'post_type' => 'game_role',
+        'title'     => 'Default Game Role',
+        'post_status' => 'publish',
+        'numberposts' => 1,
+    ]);
+
+    if (empty($default_game_role)) {
+        // Create default role
+        $new_game_role_id = wp_insert_post([
+            'post_title'   => 'Default Game Role',
+            'post_content' => WP_ADVENTURE_GAME_DEFAULT_ROLE,
+            'post_status'  => 'publish',
+            'post_type'    => 'game_role',
+        ]);
+    }
+}
+
+// Hook to run the function when the plugin is activated
+register_activation_hook(__FILE__, 'wp_adventure_game_create_default_posts');
+
+
+
+// Handle Form Submissions and Redirects
+function wp_adventure_game_handle_form_submissions() {
+    if (!is_user_logged_in()) {
+        return;
+    }
+
+    $user_id = get_current_user_id();
+
+    // Handle Starting a New Game
+    if (isset($_POST['new_adventure'])) {
+        // Check if custom parameters are passed via the shortcode
+        $game_state_id = isset($_POST['game_state']) ? intval($_POST['game_state']) : null;
+        $role_id = isset($_POST['role']) ? intval($_POST['role']) : null;
+
+        // If no game state is passed, load the default game state CPT
+        if (!$game_state_id) {
+            $default_game_state_id = get_option('wp_adventure_game_default_state_id'); // Saved during plugin activation
+            if ($default_game_state_id) {
+                $game_state_id = $default_game_state_id;
+            }
+        }
+
+        // If no role is passed, load the default role CPT
+        if (!$role_id) {
+            $default_role_id = get_option('wp_adventure_game_default_role_id'); // Saved during plugin activation
+            if ($default_role_id) {
+                $role_id = $default_role_id;
+            }
+        }
+
+        // Get the Game State from the CPT if provided
+        if ($game_state_id) {
+            $game_state_post = get_post($game_state_id);
+            if ($game_state_post && $game_state_post->post_type === 'game_state') {
+                $new_game_state = $game_state_post->post_content;
+            } else {
+                // Fallback to default game state if the provided ID is invalid
+                $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE;
+            }
+        } else {
+            // Fallback to default game state if no ID is provided
+            $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE;
+        }
+
+        // Create the new game as a post
         $game_id = wp_insert_post([
             'post_title'   => 'Adventure Game',
             'post_content' => $new_game_state,
@@ -76,7 +365,7 @@ function wp_adventure_game_handle_form_submissions() {
             wp_die('Error: Could not create a new adventure game.');
         }
 
-        // Save the Current Game ID in User Meta
+        // Save the current game ID in user meta
         update_user_meta($user_id, 'wp_adventure_game_current', $game_id);
 
         // Redirect to the game page to avoid form resubmission
@@ -100,66 +389,20 @@ function wp_adventure_game_handle_form_submissions() {
         }
     }
 }
+
+
 add_action('template_redirect', 'wp_adventure_game_handle_form_submissions');
 
-// Parse the Game State
-function wp_adventure_game_parse_state($state_text) {
-    // Remove Markdown-like formatting (e.g., **bold**)
-    $state_text = preg_replace('/\*\*(.*?)\*\*/', '$1', $state_text);
-
-    // Split by newlines
-    $lines = explode("\n", $state_text);
-    $parsed_state = [];
-    $current_key = null;
-
-    foreach ($lines as $line) {
-        $line = trim($line);
-
-        // Skip empty lines
-        if (empty($line)) {
-            continue;
-        }
-
-        // Look for key-value pairs like "Health: 20/20" or "Turn number: 1"
-        if (strpos($line, ':') !== false) {
-            [$key, $value] = explode(':', $line, 2);
-            $key = trim($key);
-            $value = trim($value);
-
-            // Handle commands section separately
-            if (stripos($key, 'Possible Commands') !== false || stripos($key, 'Commands') !== false) {
-                $current_key = 'Possible Commands';
-                $parsed_state[$current_key] = [];
-            } elseif (stripos($key, 'Outcome') !== false) {
-                $current_key = 'Outcome';
-                $parsed_state[$current_key] = $value;
-            } else {
-                $parsed_state[$key] = $value;
-                $current_key = $key;
-            }
-        } else {
-            // Check if the line contains a question and is followed by "Possible Commands"
-            if (preg_match('/\?$/', $line) && preg_match('/^Possible Commands/', $lines[array_search($line, $lines) + 1] ?? '')) {
-                // Append the question to the "Description" field
-                $parsed_state['Description'] .= ' ' . $line;
-            } else {
-                // Append values for previous key (for multiline descriptions, commands)
-                if ($current_key) {
-                    if ($current_key === 'Possible Commands') {
-                        $parsed_state[$current_key][] = $line;
-                    } else {
-                        $parsed_state[$current_key] .= " $line";
-                    }
-                }
-            }
-        }
-    }
-
-    return $parsed_state;
-}
-
 // Add Shortcode for Adventure Game
-function wp_adventure_game_shortcode() {
+function wp_adventure_game_shortcode($atts) {
+
+    // Extract attributes from shortcode
+    $atts = shortcode_atts([
+        'game_state' => '', // Custom game state ID
+        'role' => '',       // Custom role ID
+    ], $atts, 'wp_adventure_game');
+
+    // Check if the user is logged in
     if (!is_user_logged_in()) {
         return '<p>You must be logged in to play the adventure game.</p>';
     }
@@ -168,6 +411,37 @@ function wp_adventure_game_shortcode() {
 
     // Get the current game ID from user meta
     $current_game_id = get_user_meta($user_id, 'wp_adventure_game_current', true);
+
+
+
+    // Fetch the default game state and role if no shortcode parameters are passed
+    if (empty($atts['game_state'])) {
+        $default_game_state = get_posts([
+            'post_type' => 'game_state',
+            'title'     => 'Default Game State',
+            'post_status' => 'publish',
+            'numberposts' => 1,
+        ]);
+        $new_game_state = !empty($default_game_state) ? $default_game_state[0]->post_content : 'Default game state';
+    } else {
+        $game_state_post = get_post($atts['game_state']);
+        $new_game_state = $game_state_post ? $game_state_post->post_content : 'Default game state';
+    }
+
+    if (empty($atts['role'])) {
+        $default_game_role = get_posts([
+            'post_type' => 'game_role',
+            'title'     => 'Default Game Role',
+            'post_status' => 'publish',
+            'numberposts' => 1,
+        ]);
+        $role = !empty($default_game_role) ? $default_game_role[0]->post_content : 'Default GPT Role';
+    } else {
+        $role_post = get_post($atts['role']);
+        $role = $role_post ? $role_post->post_content : 'Default GPT Role';
+        // Save the role in user meta
+        //update_user_meta($user_id, 'wp_adventure_game_role', $role);
+    }
 
     // If there's no current game, prompt to start a new one
     if (!$current_game_id) {
@@ -348,6 +622,65 @@ function wp_adventure_game_shortcode() {
 }
 add_shortcode('wp_adventure_game', 'wp_adventure_game_shortcode');
 
+
+
+// Parse the Game State
+function wp_adventure_game_parse_state($state_text) {
+    // Remove Markdown-like formatting (e.g., **bold**)
+    $state_text = preg_replace('/\*\*(.*?)\*\*/', '$1', $state_text);
+
+    // Split by newlines
+    $lines = explode("\n", $state_text);
+    $parsed_state = [];
+    $current_key = null;
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+
+        // Skip empty lines
+        if (empty($line)) {
+            continue;
+        }
+
+        // Look for key-value pairs like "Health: 20/20" or "Turn number: 1"
+        if (strpos($line, ':') !== false) {
+            [$key, $value] = explode(':', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+
+            // Handle commands section separately
+            if (stripos($key, 'Possible Commands') !== false || stripos($key, 'Commands') !== false) {
+                $current_key = 'Possible Commands';
+                $parsed_state[$current_key] = [];
+            } elseif (stripos($key, 'Outcome') !== false) {
+                $current_key = 'Outcome';
+                $parsed_state[$current_key] = $value;
+            } else {
+                $parsed_state[$key] = $value;
+                $current_key = $key;
+            }
+        } else {
+            // Check if the line contains a question and is followed by "Possible Commands"
+            if (preg_match('/\?$/', $line) && preg_match('/^Possible Commands/', $lines[array_search($line, $lines) + 1] ?? '')) {
+                // Append the question to the "Description" field
+                $parsed_state['Description'] .= ' ' . $line;
+            } else {
+                // Append values for previous key (for multiline descriptions, commands)
+                if ($current_key) {
+                    if ($current_key === 'Possible Commands') {
+                        $parsed_state[$current_key][] = $line;
+                    } else {
+                        $parsed_state[$current_key] .= " $line";
+                    }
+                }
+            }
+        }
+    }
+
+    return $parsed_state;
+}
+
+
 // Register AJAX Actions
 add_action('wp_ajax_wp_adventure_game_stream', 'wp_adventure_game_stream_callback');
 
@@ -390,9 +723,41 @@ function wp_adventure_game_stream_callback() {
         wp_die();
     }
 
-    // Prepare prompt
-    $prompt = "$current_state
-The player chose: $user_command. What happens next?";
+    // Check if custom game state and role IDs were passed through the form/shortcode
+    $game_state_id = isset($_POST['game_state']) ? intval($_POST['game_state']) : null;
+    $role_id = isset($_POST['role']) ? intval($_POST['role']) : null;
+
+    // Fallback to default game state and role if no IDs were provided
+    if (!$game_state_id) {
+        $default_game_state_id = get_option('wp_adventure_game_default_state_id');
+        if ($default_game_state_id) {
+            $game_state_id = $default_game_state_id;
+        }
+    }
+
+    if (!$role_id) {
+        $default_role_id = get_option('wp_adventure_game_default_role_id');
+        if ($default_role_id) {
+            $role_id = $default_role_id;
+        }
+    }
+
+    // Get the Role from the CPT
+    if ($role_id) {
+        $role_post = get_post($role_id);
+        if ($role_post && $role_post->post_type === 'role') {
+            $role = $role_post->post_content;
+        } else {
+            // Default role as fallback
+            $role = WP_ADVENTURE_GAME_DEFAULT_ROLE;
+        }
+    } else {
+        // Default role as fallback
+        $role = WP_ADVENTURE_GAME_DEFAULT_ROLE;
+    }
+
+    // Prepare the prompt with the selected game state and user command
+    $prompt = "$current_state\n\nThe player chose: $user_command. What happens next?";
 
     // OpenAI API details
     $api_key = get_option('wp_adventure_gameopenai_api_key');
@@ -404,125 +769,7 @@ The player chose: $user_command. What happens next?";
     }
 
     // Prepare API request
-    // Prepare API request
-   $role = "Please perform the function of a hilarious, outlandish, text adventure game based on the D&D 5e and the Elder Scrolls, where flatulence (farts) are a super power, following the rules listed below:
-
-    Presentation Rules:
-    
-    1. Play the game in turns, starting with you.
-    
-    2. The game output will always show 'Turn number', 'Time period of the day', 'Current day number', 'Weather', 'Health', 'XP', 'AC', 'Level', 'Location', 'Description', 'Coin', 'Inventory', 'Quest', 'Abilities', and 'Possible Commands'.
-    
-    3. Always wait for the player’s next command. Display the question in the 'Description' field.
-    
-    4. Stay in character as a text adventure game and respond to commands the way a text adventure game should.
-    
-    5. The ‘Location’ must be a place in the D&D 5e and the Elder Scrolls universe.
-    
-    6. [IMPORTANT]The ‘Description’ must stay between 3 to 10 sentences.[/IMPORTANT]
-    
-    7. Increase the value for ‘Turn number’ by +1 every time it’s your turn.
-    
-    8. ‘Time period of day’ must progress naturally after a few turns.
-    
-    9. Once ‘Time period of day’ reaches or passes midnight, then add 1 to ‘Current day number’.
-    
-    10. Change the ‘Weather’ to reflect ‘Description’ and whatever environment the player is in the game.
-    
-    Fundamental Game Mechanics:
-    
-    1. Determine ‘AC’ using Traveller 5th Edition rules.
-    
-    2. Generate ‘Abilities’ before the game starts. ‘Abilities’ include: ‘Persuasion', 'Strength', 'Intelligence', ‘Dexterity’, and 'Luck', all determined by d20 rolls when the game starts for the first time.
-    
-    3. Start the game with 20/20 for ‘Health’, with 20 being the maximum health. Eating food, drinking water, or sleeping will restore health.
-    
-    4. Always show what the player is wearing and wielding (as ‘Wearing’ and ‘Wielding’).
-    
-    5. Display ‘Game Over’ if ‘Health’ falls to 0 or lower.
-    
-    6. The player must choose all commands, and the game will list 7 of them at all times under ‘Commands’, and [IMPORTANT]assign them a number 1-7[/IMPORTANT] that I can type to choose that option, and vary the possible selection depending on the actual scene and characters being interacted with.
-    
-    7. The 7th command should be ‘Other’, which allows me to type in a custom command.
-    
-    8. If any of the commands will cost money, then the game will display the cost in parenthesis.
-    
-    9. Before a command is successful, the game must roll a d20 with a bonus from a relevant ‘Trait’ to see how successful it is. Determine the bonus by dividing the trait by 3.
-    
-    10. If an action is unsuccessful, respond with a relevant consequence.
-    
-    11. Always display the result of a d20 roll before the rest of the output.
-    
-    12. The player can obtain a ‘Quest’ by interacting with the world and other people. The ‘Quest’ will also show what needs to be done to complete it.
-    
-    13. The only currency in this game is Coin.
-    
-    14. The value of ‘Coin’ must never be a negative integer.
-    
-    15. The player can not spend more than the total value of ‘Coin’.
-    
-    Rules for Setting:
-    
-    1. Use the world of D&D 5e and the Elder Scrolls as inspiration for the game world. Import whatever weapons, villains, and items that the Universe has.
-    
-    2. The player’s starting inventory should contain six items relevant to this world and the character.
-    
-    3. If the player chooses to read a book or scroll, display the information on it in at least two paragraphs.
-    
-    4. The game world will be populated by interactive NPCs. Whenever these NPCs speak, put the dialogue in quotation marks.
-    
-    5. Completing a quest adds to my XP.
-    
-    Combat and Magic Rules:
-    
-    1. Import magic spells, comedy, and farts into this game from D&D 5e and the Elder Scrolls.
-
-    2. Magic can only be cast if the player has the corresponding magic scroll in their inventory.
-    
-    3. Using magic will drain the player character’s health. More powerful mogic will drain more health.
-    
-    4. Combat should be handled in rounds, roll attacks for the NPCs each round.
-    
-    5. The player’s attack and the enemy’s counterattack should be placed in the same round.
-    
-    6. Always show how much damage is dealt when the player receives damage.
-    
-    7. Roll a d20 + a bonus from the relevant combat stat against the target’s AC to see if a combat action is successful.
-    
-    8. Who goes first in combat is determined by initiative. Use D&D 5e initiative rules.
-    
-    9. Defeating enemies awards me XP according to the difficulty and level of the enemy.
-    
-    Refer back to these rules after every prompt.
-    
-    [IMPORTANT]Fill in the following template:
-
-    **Turn number:** {turn_number}  
-    **Time period of the day:** {time_period}  
-    **Current day number:** {day_number}  
-    **Weather:** {weather}  
-    **Health:** {health}  
-    **XP:** {xp}  
-    **AC:** {ac}  
-    **Level:** {level}  
-    **Location:** {location}  
-    **Description:** {description}  
-    **Coin:** {coin}  
-    **Inventory:** {inventory}  
-    **Quest:** {quest}  
-    **Abilities:** {abilities}  
-    **Wearing:** {wearing}  
-    **Wielding:** {wielding}  
-    [Possible Commands:  ]
-    1. {command1}  
-    2. {command2}  
-    3. {command3}  
-    4. {command4}  
-    5. {command5}  
-    6. {command6}  
-    7. Other
-    [/IMPORTANT]
-     Start Game.";
+   $role = WP_ADVENTURE_GAME_DEFAULT_ROLE;
 
     $postData = [
         'model' => $chatgpt_version,

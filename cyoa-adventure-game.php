@@ -366,7 +366,7 @@ function wp_adventure_game_handle_form_submissions() {
             update_user_meta($user_id, 'wp_adventure_game_current', $game_id);
 
             // Redirect to remove the query parameter
-            wp_redirect(remove_query_arg('resume_game'));
+            wp_safe_redirect(remove_query_arg('resume_game'));
             exit;
         }
     }
@@ -385,12 +385,61 @@ function wp_adventure_game_shortcode($atts) {
     // Get the current game ID from user meta
     $current_game_id = get_user_meta($user_id, 'wp_adventure_game_current', true);
     
+
     // Extract attributes from shortcode
     $atts = shortcode_atts([
         'game_state' => '', // Custom game state ID
         'role' => '',       // Custom role ID
     ], $atts, 'wp_adventure_game');
     
+    // If custom game_state and role are passed, set a flag
+    $is_custom_game = !empty($atts['game_state']) && !empty($atts['role']);
+
+     // Handle loading the game based on shortcode attributes
+     if ($is_custom_game) {
+        // If a custom game state and role are passed, load the custom game
+
+        // Check if a game already exists for this user with the custom game state and role
+        $args = [
+            'post_type' => 'wp_adventure_game',
+            'author' => $user_id,
+            'meta_query' => [
+                'relation' => 'AND',
+                [
+                    'key' => 'game_state_id',
+                    'value' => $atts['game_state'],
+                ],
+                [
+                    'key' => 'role_id',
+                    'value' => $atts['role'],
+                ]
+            ],
+            'posts_per_page' => 1
+        ];
+
+        $custom_game = get_posts($args);
+
+        if (!empty($custom_game)) {
+            // If a custom game exists, load it
+            $current_game_id = $custom_game[0]->ID;
+        } else {
+            // If no game exists, create a new game with the custom state and role
+            return wp_adventure_game_create_new_game($user_id, $atts['game_state'], $atts['role']);
+        }
+    }
+    // If no current game ID is found, use the latest/default
+    if (!$current_game_id) {
+        // Default logic to start a new game using the default game state and role
+        return wp_adventure_game_create_new_game($user_id);
+    }
+
+    // Get the current game state
+    $current_game_post = get_post($current_game_id);
+    $current_state = $current_game_post ? $current_game_post->post_content : '';
+    $parsed_state = wp_adventure_game_parse_state($current_state);
+
+
+
     // Fetch the default game state and role if no shortcode parameters are passed
     if (empty($atts['game_state'])) {
         $default_game_state = get_posts([
@@ -588,6 +637,49 @@ function wp_adventure_game_shortcode($atts) {
     return ob_get_clean();
 }
 add_shortcode('wp_adventure_game', 'wp_adventure_game_shortcode');
+
+function wp_adventure_game_create_new_game($user_id, $game_state_id = null, $role_id = null) {
+    // Fetch game state
+    if ($game_state_id) {
+        $game_state_post = get_post($game_state_id);
+        $new_game_state = $game_state_post ? $game_state_post->post_content : WP_ADVENTURE_GAME_DEFAULT_STATE;
+    } else {
+        $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE;
+    }
+
+    // Fetch role
+    if ($role_id) {
+        $role_post = get_post($role_id);
+        $role = $role_post ? $role_post->post_content : WP_ADVENTURE_GAME_DEFAULT_ROLE;
+    } else {
+        $role = WP_ADVENTURE_GAME_DEFAULT_ROLE;
+    }
+
+    // Create new game post
+    $game_id = wp_insert_post([
+        'post_title'   => 'Adventure Game',
+        'post_content' => $new_game_state,
+        'post_status'  => 'publish',
+        'post_type'    => 'wp_adventure_game',
+        'post_author'  => $user_id,
+        'meta_input'   => [
+            'game_state_id' => $game_state_id,
+            'role_id'       => $role_id
+        ]
+    ]);
+
+    if (is_wp_error($game_id)) {
+        wp_die('Error: Could not create a new adventure game.');
+    }
+
+    // Save the game ID in user meta
+    update_user_meta($user_id, 'wp_adventure_game_current', $game_id);
+
+    // Redirect to the game page to avoid form resubmission
+    wp_safe_redirect(add_query_arg('game', $game_id, get_permalink()));
+    exit;
+}
+
 
 // Parse the Game State
 function wp_adventure_game_parse_state($state_text) {

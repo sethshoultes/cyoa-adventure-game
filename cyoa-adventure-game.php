@@ -320,7 +320,7 @@ function wp_adventure_game_handle_form_submissions() {
     if (isset($_POST['new_adventure'])) {
         // Check if custom parameters are passed via the shortcode
         $game_state_id = isset($_POST['game_state']) ? intval($_POST['game_state']) : null;
-        //$role_id = isset($_POST['role']) ? intval($_POST['role']) : null;//Not currently using roles in this function
+        $role_id = isset($_POST['role']) ? intval($_POST['role']) : null;//Not currently using roles in this function
 
         // Check if the game state ID exists and is valid, otherwise use the default constant
         if ($game_state_id) {
@@ -334,6 +334,18 @@ function wp_adventure_game_handle_form_submissions() {
             $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
         }
 
+        // Check if the role ID exists and is valid, otherwise use the default constant
+        if ($role_id) {
+            $role_post = get_post($role_id);
+            if ($role_post && $role_post->post_type === 'game_role') {
+                $role = $role_post->post_content;
+            } else {
+                $role = WP_ADVENTURE_GAME_DEFAULT_ROLE; // Fallback to default role
+            }
+        } else {
+            $role = WP_ADVENTURE_GAME_DEFAULT_ROLE; // Fallback to default role
+        }
+
         // Create the new game as a post
         $game_id = wp_insert_post([
             'post_title'   => 'Adventure Game',
@@ -341,6 +353,10 @@ function wp_adventure_game_handle_form_submissions() {
             'post_status'  => 'publish',
             'post_type'    => 'wp_adventure_game',
             'post_author'  => $user_id,
+            'meta_input'   => [
+                'game_state_id' => $game_state_id,
+                'role_id'       => $role_id,
+            ]
         ]);
 
         if (is_wp_error($game_id)) {

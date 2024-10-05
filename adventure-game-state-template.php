@@ -9,21 +9,9 @@ if (!isset($parsed_state)) {
 $user_id = get_current_user_id();
 $character = get_user_meta($user_id, 'adventure_game_character', true);
 
-
-// Function to convert Markdown-like content to HTML
-function format_game_content($content) {
-    // Convert **text** to <strong>text</strong>
-    $content = str_replace('**', '<strong>', $content);
-    // Replace double space with the closing </strong>
-    $content = preg_replace('/\s{2}/', '</strong>', $content);
-
-    // Handle the new line characters as <br> tags
-    return nl2br($content);
-}
-
 // Process each part of the game state
-$game_status = isset($parsed_state['GameStatus']) ? format_game_content($parsed_state['GameStatus']) : '';
-$description = isset($parsed_state['Description']) ? format_game_content($parsed_state['Description']) : '';
+$game_status = isset($parsed_state['GameStatus']) ? wp_adventure_game_format_game_content($parsed_state['GameStatus']) : '';
+$description = isset($parsed_state['Description']) ? wp_adventure_game_format_game_content($parsed_state['Description']) : '';
 $commands = isset($parsed_state['Possible Commands']) ? $parsed_state['Possible Commands'] : [];
 
 if ($character) {

@@ -15,397 +15,9 @@ function wp_adventure_game_enqueue_styles() {
 }
 add_action('wp_enqueue_scripts', 'wp_adventure_game_enqueue_styles');
 
-// Register Custom Post Type for Adventure Games
-function register_wp_adventure_game_post_type() {
-    register_post_type('wp_adventure_game', [
-        'labels' => [
-            'name' => 'Adventure Games',
-            'singular_name' => 'Adventure Game',
-        ],
-        'public' => false,
-        'has_archive' => false,
-        'rewrite' => false,
-        'supports' => ['title', 'editor', 'author'],
-    ]);
-}
-add_action('init', 'register_wp_adventure_game_post_type');
-
-// Handle Form Submissions and Redirects
-function wp_adventure_game_handle_form_submissions() {
-    if (!is_user_logged_in()) {
-        return;
-    }
-
-    $user_id = get_current_user_id();
-
-    // Handle Starting a New Game
-    if (isset($_POST['new_adventure'])) {
-        $new_game_state = "Turn number: 1
-        Time period of the day: Morning
-        Current day number: 1
-        Weather: Clear
-        Health: 20/20
-        XP: 0
-        AC: 15
-        Level: 1
-        Location: Daggerfall
-        Description: You find yourself in the streets of Daggerfall. What will you do next?
-        Coins: 10
-        Inventory: - Rusty Sword - Tattered Cloak - Healing Potion - Traveler's Backpack - Torch - Map of Daggerfall Kingdom
-        Abilities: - Persuasion: 8 - Strength: 12 - Intelligence: 15 - Dexterity: 10 - Luck: 14
-        Quest: None
-        Possible Commands:
-        1. Prepare to set off explore a dungeon
-        2. Have breakfast at the inn
-        3. Ask the innkeeper for more information about the Shadow Stalker
-        4. Check your equipment before leaving
-        5. Write in your journal about the stories you heard
-        6. Visit the local blacksmith to inquire about weapon upgrades
-        7. Other";// Initial game state
-
-        // Save the New Game State as a New Game
-        $game_id = wp_insert_post([
-            'post_title'   => 'Adventure Game',
-            'post_content' => $new_game_state,
-            'post_status'  => 'publish',
-            'post_type'    => 'wp_adventure_game',
-            'post_author'  => $user_id,
-        ]);
-
-        if (is_wp_error($game_id)) {
-            wp_die('Error: Could not create a new adventure game.');
-        }
-
-        // Save the Current Game ID in User Meta
-        update_user_meta($user_id, 'wp_adventure_game_current', $game_id);
-
-        // Redirect to the game page to avoid form resubmission
-        wp_redirect(add_query_arg('game', $game_id, get_permalink()));
-        exit;
-    }
-
-    // Handle Resuming a Game
-    if (isset($_GET['resume_game'])) {
-        $game_id = intval($_GET['resume_game']);
-
-        // Check if the game belongs to the user
-        $game_post = get_post($game_id);
-        if ($game_post && $game_post->post_author == $user_id) {
-            // Set this game as the current game
-            update_user_meta($user_id, 'wp_adventure_game_current', $game_id);
-
-            // Redirect to remove the query parameter
-            wp_redirect(remove_query_arg('resume_game'));
-            exit;
-        }
-    }
-}
-add_action('template_redirect', 'wp_adventure_game_handle_form_submissions');
-
-// Parse the Game State
-function wp_adventure_game_parse_state($state_text) {
-    // Remove Markdown-like formatting (e.g., **bold**)
-    $state_text = preg_replace('/\*\*(.*?)\*\*/', '$1', $state_text);
-
-    // Split by newlines
-    $lines = explode("\n", $state_text);
-    $parsed_state = [];
-    $current_key = null;
-
-    foreach ($lines as $line) {
-        $line = trim($line);
-
-        // Skip empty lines
-        if (empty($line)) {
-            continue;
-        }
-
-        // Look for key-value pairs like "Health: 20/20" or "Turn number: 1"
-        if (strpos($line, ':') !== false) {
-            [$key, $value] = explode(':', $line, 2);
-            $key = trim($key);
-            $value = trim($value);
-
-            // Handle commands section separately
-            if (stripos($key, 'Possible Commands') !== false || stripos($key, 'Commands') !== false) {
-                $current_key = 'Possible Commands';
-                $parsed_state[$current_key] = [];
-            } elseif (stripos($key, 'Outcome') !== false) {
-                $current_key = 'Outcome';
-                $parsed_state[$current_key] = $value;
-            } else {
-                $parsed_state[$key] = $value;
-                $current_key = $key;
-            }
-        } else {
-            // Check if the line contains a question and is followed by "Possible Commands"
-            if (preg_match('/\?$/', $line) && preg_match('/^Possible Commands/', $lines[array_search($line, $lines) + 1] ?? '')) {
-                // Append the question to the "Description" field
-                $parsed_state['Description'] .= ' ' . $line;
-            } else {
-                // Append values for previous key (for multiline descriptions, commands)
-                if ($current_key) {
-                    if ($current_key === 'Possible Commands') {
-                        $parsed_state[$current_key][] = $line;
-                    } else {
-                        $parsed_state[$current_key] .= " $line";
-                    }
-                }
-            }
-        }
-    }
-
-    return $parsed_state;
-}
-
-// Add Shortcode for Adventure Game
-function wp_adventure_game_shortcode() {
-    if (!is_user_logged_in()) {
-        return '<p>You must be logged in to play the adventure game.</p>';
-    }
-
-    $user_id = get_current_user_id();
-
-    // Get the current game ID from user meta
-    $current_game_id = get_user_meta($user_id, 'wp_adventure_game_current', true);
-
-    // If there's no current game, prompt to start a new one
-    if (!$current_game_id) {
-        ob_start();
-        ?>
-        <form method="POST">
-            <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
-       
-        <?php
-        return ob_get_clean();
-    }
-
-    // Get the current game state
-    $current_game_post = get_post($current_game_id);
-    $current_state = $current_game_post ? $current_game_post->post_content : '';
-    $parsed_state = wp_adventure_game_parse_state($current_state);
-    if (!isset($parsed_state['Possible Commands']) || empty($parsed_state['Possible Commands'])) {
-        $parsed_state['Possible Commands'] = ['1. Wait and observe', '2. Explore the surroundings', '3. Rest'];
-    }
-
-    // Output the current game state and the form for the next command
-    ob_start();
-    ?>
-    <div class="adventure-game-container">
-        <h2>Text Adventure Game</h2>
-        <div class="game-state">
-            <?php
-            include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
-            ?>
-        </div>
-        <form id="adventure-game-form">
-            <label for="user_command">Enter your next action:</label>
-            <input type="text" name="user_command" id="user_command" placeholder="e.g., 1, 2, explore" required />
-            <input type="submit" value="Submit" />
-        </form>
-        <form method="POST" style="margin-top: 10px;">
-            <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
-        </form>
-        </form>
-            <form method="POST" style="margin-top: 10px;">
-            <input type="hidden" name="clear_history" value="1">
-            <?php wp_nonce_field('clear_adventure_history', 'clear_history_nonce'); ?>
-            <input type="submit" value="Clear Adventure History" class="clear-history-button" onclick="return confirm('Are you sure you want to clear your adventure history? This action cannot be undone.');" />
-        </form>
-        <h3>Your Past Adventures</h3>
-        <?php
-        // Get past games
-        $args = [
-            'post_type'      => 'wp_adventure_game',
-            'author'         => $user_id,
-            'posts_per_page' => -1,
-            'post_status'    => 'publish',
-            'orderby'        => 'date',
-            'order'          => 'DESC',
-        ];
-        $past_games = get_posts($args);
-        if ($past_games) {
-            echo '<ul>';
-            foreach ($past_games as $game) {
-                // Highlight the current game
-                if ($game->ID == $current_game_id) {
-                    echo '<li><strong>Current Adventure (' . get_the_date('F j, Y g:i a', $game) . ')</strong></li>';
-                } else {
-                    echo '<li>';
-                    echo '<a href="' . esc_url(add_query_arg('resume_game', $game->ID)) . '">Adventure from ' . esc_html(get_the_date('F j, Y g:i a', $game)) . '</a>';
-                    echo '</li>';
-                }
-            }
-            echo '</ul>';
-        } else {
-            echo '<p>No past adventures found.</p>';
-        }
-        ?>
-        <div class="spinner" style="display: none;">
-            <div class="spinner-icon"></div>
-            <p>Generating content...</p>
-        </div>
-    </div>
-
-    <script>
-    document.getElementById('adventure-game-form').addEventListener('submit', function(e) {
-    e.preventDefault();  // Prevent the form from submitting the normal way
-    var userCommand = document.getElementById('user_command').value.trim();
-
-    if (userCommand === '') {
-        alert('Please enter a command.');
-        return;
-    }
-
-    // Prepare the data to send
-    var data = new FormData();
-    data.append('action', 'wp_adventure_game_stream');  // Ensure this matches the registered AJAX action
-    data.append('user_command', userCommand);
-
-    // Clear the input field
-    document.getElementById('user_command').value = '';
-
-    // Disable the submit button to prevent multiple submissions
-    var submitButton = document.querySelector('#adventure-game-form input[type="submit"]');
-    submitButton.disabled = true;
-    submitButton.value = 'Processing...';
-
-    // Prepare the game state display
-    var gameStateContainer = document.querySelector('.game-state');
-    if (!gameStateContainer) {
-        console.error('Element with class "game-state" not found.');
-        // Re-enable the submit button
-        submitButton.disabled = false;
-        submitButton.value = 'Submit';
-        return;
-    }
-
-    // Show the spinner
-    var spinner = document.querySelector('.spinner');
-    spinner.style.display = 'flex';
-
-
-    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-        method: 'POST',
-        body: data,
-        credentials: 'same-origin',
-    })
-    .then(response => response.text())
-        .then(html => {
-            // Replace any Markdown-style bold (**) with <strong> HTML tags
-            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-            // Strip out triple backticks if they exist in the response
-            html = html.replace(/```/g, '');
-            
-            // Check if the new response content is the same as the existing content
-            if (gameStateContainer.innerHTML !== html) {
-                // Update the game state content only if it's different
-                gameStateContainer.innerHTML = html;
-            }
-
-
-            // Hide the spinner
-            spinner.style.display = 'none';
-
-            // Re-enable the submit button
-            submitButton.disabled = false;
-            submitButton.value = 'Submit';
-
-            // Re-focus on the input field
-            document.getElementById('user_command').focus();
-        })
-        .catch(error => {
-            console.error(error);
-            gameStateContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
-            // Hide the spinner
-            spinner.style.display = 'none';
-            // Re-enable the submit button
-            submitButton.disabled = false;
-            submitButton.value = 'Submit';
-        });
-    });
-
-    // Event listener for command buttons using event delegation
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('game-command-button')) {
-            var commandText = e.target.textContent.trim();
-            // Set the command in the input field
-            var userCommandInput = document.getElementById('user_command');
-            if (userCommandInput) {
-                userCommandInput.value = commandText;
-                // Submit the form
-                document.getElementById('adventure-game-form').dispatchEvent(new Event('submit', { cancelable: true }));
-            } else {
-                console.error('Input field with id "user_command" not found.');
-            }
-        }
-    });
-</script>
-
-    <?php
-    return ob_get_clean();
-}
-add_shortcode('wp_adventure_game', 'wp_adventure_game_shortcode');
-
-// Register AJAX Actions
-add_action('wp_ajax_wp_adventure_game_stream', 'wp_adventure_game_stream_callback');
-
-// Function to Handle the AJAX Request and Return Updated Game State
-function wp_adventure_game_stream_callback() {
-    // Enable error reporting for debugging (disable in production)
-    error_reporting(E_ALL);
-    ini_set('display_errors', 1);
-    // Log the start of the callback
-    error_log('wp_adventure_game_stream_callback called');
-
-    // Only allow logged-in users
-    if (!is_user_logged_in()) {
-        echo 'Error: You must be logged in to play.';
-        wp_die();
-    }
-
-    // Get current user and game ID
-    $user_id = get_current_user_id();
-    $current_game_id = get_user_meta($user_id, 'wp_adventure_game_current', true);
-
-    if (!$current_game_id) {
-        echo 'Error: No active game found.';
-        wp_die();
-    }
-
-    // Get current game state
-    $current_game_post = get_post($current_game_id);
-    if (!$current_game_post || $current_game_post->post_author != $user_id) {
-        echo 'Error: Invalid game or permission denied.';
-        wp_die();
-    }
-    $current_state = $current_game_post->post_content;
-
-    // Get user command
-    $user_command = isset($_POST['user_command']) ? sanitize_text_field($_POST['user_command']) : '';
-
-    if (empty($user_command)) {
-        echo 'Error: No command provided.';
-        wp_die();
-    }
-
-    // Prepare prompt
-    $prompt = "$current_state
-The player chose: $user_command. What happens next?";
-
-    // OpenAI API details
-    $api_key = get_option('wp_adventure_gameopenai_api_key');
-    $chatgpt_version = get_option('wp_adventure_gamechatgpt_version', 'gpt-3.5-turbo');
-
-    if (empty($api_key)) {
-        echo 'Error: API key not set.';
-        wp_die();
-    }
-
-    // Prepare API request
-    // Prepare API request
-   $role = "Please perform the function of a hilarious, outlandish, text adventure game based on the D&D 5e and the Elder Scrolls, where flatulence (farts) are a super power, following the rules listed below:
+// Define constants for the default role and game state
+if (!defined('WP_ADVENTURE_GAME_DEFAULT_ROLE')) {
+    define('WP_ADVENTURE_GAME_DEFAULT_ROLE', "Please perform the function of a hilarious, outlandish, text adventure game based on the D&D 5e and the Elder Scrolls, where flatulence (farts) are a super power, following the rules listed below:
 
     Presentation Rules:
     
@@ -522,8 +134,726 @@ The player chose: $user_command. What happens next?";
     6. {command6}  
     7. Other
     [/IMPORTANT]
-     Start Game.";
+     Start Game.");
+}
 
+if (!defined('WP_ADVENTURE_GAME_DEFAULT_STATE')) {
+    define('WP_ADVENTURE_GAME_DEFAULT_STATE', "Turn number: 1
+        Time period of the day: Morning
+        Current day number: 1
+        Weather: Clear
+        Health: 20/20
+        XP: 0
+        AC: 15
+        Level: 1
+        Location: Daggerfall
+        Description: You find yourself in the streets of Daggerfall. What will you do next?
+        Coins: 10
+        Inventory: - Rusty Sword - Tattered Cloak - Healing Potion - Traveler's Backpack - Torch - Map of Daggerfall Kingdom
+        Abilities: - Persuasion: 8 - Strength: 12 - Intelligence: 15 - Dexterity: 10 - Luck: 14
+        Quest: None
+        Possible Commands:
+        1. Prepare to set off explore a dungeon
+        2. Have breakfast at the inn
+        3. Ask the innkeeper for more information about the Shadow Stalker
+        4. Check your equipment before leaving
+        5. Write in your journal about the stories you heard
+        6. Visit the local blacksmith to inquire about weapon upgrades
+        7. Other");
+}
+
+function register_adventure_game_cpts() {
+    
+    // Register Adventure Game CPT
+    //This post type will be used to store the game state for each adventure game.
+    register_post_type('wp_adventure_game', [
+        'labels' => [
+            'name' => 'Adventure Games',
+            'singular_name' => 'Adventure Game',
+        ],
+        'public' => false,
+        'has_archive' => false,
+        'rewrite' => false,
+        'supports' => ['title', 'editor', 'author'],
+    ]);
+    
+    // Register Game State CPT
+    register_post_type('game_state', [
+        'labels' => [
+            'name' => 'Game States',
+            'singular_name' => 'Game State',
+        ],
+        'public' => true,
+        'has_archive' => false,
+        'rewrite' => ['slug' => 'game-state'],
+        'supports' => ['title', 'editor'],
+    ]);
+
+    // Register Role CPT
+    register_post_type('game_role', [
+        'labels' => [
+            'name' => 'Game Roles',
+            'singular_name' => 'Game Role',
+        ],
+        'public' => true,
+        'has_archive' => false,
+        'rewrite' => ['slug' => 'game-role'],
+        'supports' => ['title', 'editor'],
+    ]);
+
+    
+}
+add_action('init', 'register_adventure_game_cpts');
+
+// Register Custom Post Type for Game State
+function wp_adventure_game_register_custom_post_types() {
+    // Game State Custom Post Type
+    $game_state_labels = [
+        'name' => 'Game States',
+        'singular_name' => 'Game State',
+        'menu_name' => 'Game States',
+        'name_admin_bar' => 'Game State',
+        'add_new' => 'Add New',
+        'add_new_item' => 'Add New Game State',
+        'new_item' => 'New Game State',
+        'edit_item' => 'Edit Game State',
+        'view_item' => 'View Game State',
+        'all_items' => 'All Game States',
+        'search_items' => 'Search Game States',
+        'not_found' => 'No Game States found.',
+    ];
+
+    $game_state_args = [
+        'labels' => $game_state_labels,
+        'public' => true,
+        'show_in_menu' => true,
+        'supports' => ['title', 'editor'],
+        'menu_icon' => 'dashicons-clipboard',
+        'has_archive' => true,
+    ];
+
+    register_post_type('game_state', $game_state_args);
+
+    // Role Custom Post Type
+    $role_labels = [
+        'name' => 'Game Roles',
+        'singular_name' => 'Game Role',
+        'menu_name' => 'Game Roles',
+        'name_admin_bar' => 'Game Role',
+        'add_new' => 'Add New',
+        'add_new_item' => 'Add New Game Role',
+        'new_item' => 'New Game Role',
+        'edit_item' => 'Edit Game Role',
+        'view_item' => 'View Game Role',
+        'all_items' => 'All Game Roles',
+        'search_items' => 'Search Game Roles',
+        'not_found' => 'No Game Roles found.',
+    ];
+
+    $role_args = [
+        'labels' => $role_labels,
+        'public' => true,
+        'show_in_menu' => true,
+        'supports' => ['title', 'editor'],
+        'menu_icon' => 'dashicons-groups',
+        'has_archive' => true,
+    ];
+
+    register_post_type('game_role', $role_args);
+}
+add_action('init', 'wp_adventure_game_register_custom_post_types');
+
+
+// Function to create default game state and role when the plugin is activated
+function wp_adventure_game_create_default_posts() {
+    // Check if the default game state already exists
+    $default_game_state = get_posts([
+        'post_type' => 'game_state',
+        'title'     => 'Default Game State',
+        'post_status' => 'publish',
+        'numberposts' => 1,
+    ]);
+
+    if (empty($default_game_state)) {
+        // Create default game state
+        $new_game_state_id = wp_insert_post([
+            'post_title'   => 'Default Game State',
+            'post_content' => WP_ADVENTURE_GAME_DEFAULT_STATE,// Initial game state
+            'post_status'  => 'publish',
+            'post_type'    => 'game_state',
+        ]);
+    }
+
+    // Check if the default role already exists
+    $default_game_role = get_posts([
+        'post_type' => 'game_role',
+        'title'     => 'Default Game Role',
+        'post_status' => 'publish',
+        'numberposts' => 1,
+    ]);
+
+    if (empty($default_game_role)) {
+        // Create default role
+        $new_game_role_id = wp_insert_post([
+            'post_title'   => 'Default Game Role',
+            'post_content' => WP_ADVENTURE_GAME_DEFAULT_ROLE,
+            'post_status'  => 'publish',
+            'post_type'    => 'game_role',
+        ]);
+    }
+}
+
+// Hook to run the function when the plugin is activated
+register_activation_hook(__FILE__, 'wp_adventure_game_create_default_posts');
+
+
+
+// Handle Form Submissions and Redirects
+function wp_adventure_game_handle_form_submissions() {
+    if (!is_user_logged_in()) {
+        return;
+    }
+
+    $user_id = get_current_user_id();
+
+    // Handle Starting a New Game
+    if (isset($_POST['new_adventure'])) {
+        // Check if custom parameters are passed via the shortcode
+        $game_state_id = isset($_POST['game_state']) ? intval($_POST['game_state']) : null;
+        $role_id = isset($_POST['role']) ? intval($_POST['role']) : null;//Not currently using roles in this function
+
+        // Check if the game state ID exists and is valid, otherwise use the default constant
+        if ($game_state_id) {
+            $game_state_post = get_post($game_state_id);
+            if ($game_state_post && $game_state_post->post_type === 'game_state') {
+                $game_state_post = get_post($game_state_id);
+                //$new_game_state = $game_state_post->post_content;
+                $new_game_state = $game_state_post ? $game_state_post->post_content : WP_ADVENTURE_GAME_DEFAULT_STATE;
+            } else {
+                $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
+            }
+        } /*else {
+            $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
+        }*/
+
+        // Check if the role ID exists and is valid, otherwise use the default constant
+        if ($role_id) {
+            $role_post = get_post($role_id);
+            if ($role_post && $role_post->post_type === 'game_role') {
+                $role = $role_post->post_content;
+            } else {
+                $role = WP_ADVENTURE_GAME_DEFAULT_ROLE; // Fallback to default role
+            }
+        } else {
+            $role = WP_ADVENTURE_GAME_DEFAULT_ROLE; // Fallback to default role
+        }
+
+        // Create the new game as a post
+        $game_id = wp_insert_post([
+            'post_title'   => 'Adventure Game',
+            'post_content' => $new_game_state,
+            'post_status'  => 'publish',
+            'post_type'    => 'wp_adventure_game',
+            'post_author'  => $user_id,
+            'meta_input'   => [
+                'game_state_id' => $game_state_id,
+                'role_id'       => $role_id,
+            ]
+        ]);
+
+        if (is_wp_error($game_id)) {
+            wp_die('Error: Could not create a new adventure game.');
+        }
+
+        // Save the current game ID in user meta
+        update_user_meta($user_id, 'wp_adventure_game_current', $game_id);
+
+        // Redirect to the game page to avoid form resubmission
+        wp_redirect(add_query_arg('game', $game_id, get_permalink()));
+        exit;
+    }
+
+    // Handle Resuming a Game
+    if (isset($_GET['resume_game'])) {
+        $game_id = intval($_GET['resume_game']);
+
+        // Check if the game belongs to the user
+        $game_post = get_post($game_id);
+        if ($game_post && $game_post->post_author == $user_id) {
+            // Set this game as the current game
+            update_user_meta($user_id, 'wp_adventure_game_current', $game_id);
+
+            // Redirect to remove the query parameter
+            wp_safe_redirect(remove_query_arg('resume_game'));
+            exit;
+        }
+    }
+}
+add_action('template_redirect', 'wp_adventure_game_handle_form_submissions');
+
+// Add Shortcode for Adventure Game
+function wp_adventure_game_shortcode($atts) {
+    // Check if the user is logged in
+    if (!is_user_logged_in()) {
+        return '<p>You must be logged in to play the adventure game.</p>';
+    }
+    //Get the current user ID
+    $user_id = get_current_user_id();
+
+    // Get the current game ID from user meta
+    $current_game_id = get_user_meta($user_id, 'wp_adventure_game_current', true);
+    
+
+    // Extract attributes from shortcode
+    $atts = shortcode_atts([
+        'game_state' => null, // Custom game state ID
+        'role' => null,       // Custom role ID
+    ], $atts, 'wp_adventure_game');
+    
+    // If custom game_state and role are passed, set a flag
+    $is_custom_game = !empty($atts['game_state']) && !empty($atts['role']);
+
+     // Handle loading the game based on shortcode attributes
+     if ($is_custom_game) {
+        // If a custom game state and role are passed, load the custom game
+
+        // Check if a game already exists for this user with the custom game state and role
+        $args = [
+            'post_type' => 'wp_adventure_game',
+            'author' => $user_id,
+            'meta_query' => [
+                'relation' => 'AND',
+                [
+                    'key' => 'game_state_id',
+                    'value' => $atts['game_state'],
+                ],
+                [
+                    'key' => 'role_id',
+                    'value' => $atts['role'],
+                ]
+            ],
+            'posts_per_page' => 1
+        ];
+
+        $custom_game = get_posts($args);
+
+        if (!empty($custom_game)) {
+            // If a custom game exists, load it
+            $current_game_id = $custom_game[0]->ID;
+        } else {
+            // If no game exists, create a new game with the custom state and role
+            return wp_adventure_game_create_new_game($user_id, $atts['game_state'], $atts['role']);
+        }
+    }
+    // If no current game ID is found, use the latest/default
+    if (!$current_game_id) {
+        // Default logic to start a new game using the default game state and role
+        return wp_adventure_game_create_new_game($user_id);
+    }
+
+    // Get the current game state
+    $current_game_post = get_post($current_game_id);
+    $current_state = $current_game_post ? $current_game_post->post_content : '';
+    $parsed_state = wp_adventure_game_parse_state($current_state);
+
+
+
+    // Fetch the default game state and role if no shortcode parameters are passed
+    if (empty($atts['game_state'])) {
+        $default_game_state = get_posts([
+            'post_type' => 'game_state',
+            'title'     => 'Default Game State',
+            'post_status' => 'publish',
+            'numberposts' => 1,
+        ]);
+        $new_game_state = !empty($default_game_state) ? $default_game_state[0]->post_content : 'Default game state';
+    } else {
+        $game_state_post = get_post($atts['game_state']);
+        $new_game_state = $game_state_post ? $game_state_post->post_content : 'Default game state';
+    }
+
+    // If there's no current game, prompt to start a new one
+    if (!$current_game_id) {
+        ob_start();
+        ?>
+        <form method="POST">
+            <input type="hidden" name="game_state" value="<?php echo esc_attr($atts['game_state_id']); ?>" />
+            <input type="hidden" name="role" value="<?php echo esc_attr($atts['role_id']); ?>" />
+            <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
+        </form>
+        <?php
+        return ob_get_clean();
+    }
+
+    // Get the current game state
+    $current_game_post = get_post($current_game_id);
+    $current_state = $current_game_post ? $current_game_post->post_content : '';
+    $parsed_state = wp_adventure_game_parse_state($current_state);
+    if (!isset($parsed_state['Possible Commands']) || empty($parsed_state['Possible Commands'])) {
+        $parsed_state['Possible Commands'] = ['1. Wait and observe', '2. Explore the surroundings', '3. Rest'];
+    }
+
+    // Output the current game state and the form for the next command
+    ob_start();
+    ?>
+    <div class="adventure-game-container">
+        <h2>Text Adventure Game</h2>
+        <div class="game-state">
+            <?php
+            include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
+            ?>
+        </div>
+        <div class="spinner" style="display: none;">
+            <div class="spinner-icon"></div>
+            <p>Generating content...</p>
+        </div>
+        <form id="adventure-game-form">
+            <label for="user_command">Enter your next action:</label>
+            <input type="text" name="user_command" id="user_command" placeholder="e.g., 1, 2, explore" required />
+            <input type="submit" value="Submit" />
+        </form>
+        <form method="POST" style="margin-top: 10px;">
+            <input type="hidden" name="game_state" value="<?php echo esc_attr($atts['game_state']); ?>" />
+            <input type="hidden" name="role" value="<?php echo esc_attr($atts['role']); ?>" />
+            <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
+        </form>
+       
+        </form>
+            <form method="POST" style="margin-top: 10px;">
+            <input type="hidden" name="clear_history" value="1">
+            <?php wp_nonce_field('clear_adventure_history', 'clear_history_nonce'); ?>
+            <input type="submit" value="Clear Adventure History" class="clear-history-button" onclick="return confirm('Are you sure you want to clear your adventure history? This action cannot be undone.');" />
+        </form>
+        <h3>Your Past Adventures</h3>
+        <?php
+        // Get past games
+        $args = [
+            'post_type'      => 'wp_adventure_game',
+            'author'         => $user_id,
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+        ];
+        $past_games = get_posts($args);
+        if ($past_games) {
+            echo '<ul>';
+            foreach ($past_games as $game) {
+                // Highlight the current game
+                if ($game->ID == $current_game_id) {
+                    echo '<li><strong>Current Adventure (' . get_the_date('F j, Y g:i a', $game) . ')</strong></li>';
+                } else {
+                    echo '<li>';
+                    echo '<a href="' . esc_url(add_query_arg('resume_game', $game->ID)) . '">Adventure from ' . esc_html(get_the_date('F j, Y g:i a', $game)) . '</a>';
+                    echo '</li>';
+                }
+            }
+            echo '</ul>';
+        } else {
+            echo '<p>No past adventures found.</p>';
+        }
+        ?>
+    </div>
+
+    <script>
+    document.getElementById('adventure-game-form').addEventListener('submit', function(e) {
+    e.preventDefault();  // Prevent the form from submitting the normal way
+    var userCommand = document.getElementById('user_command').value.trim();
+
+    if (userCommand === '') {
+        alert('Please enter a command.');
+        return;
+    }
+
+    // Prepare the data to send
+    var data = new FormData();
+    data.append('action', 'wp_adventure_game_stream');  // Ensure this matches the registered AJAX action
+    data.append('user_command', userCommand);
+
+    // Clear the input field
+    document.getElementById('user_command').value = '';
+
+    // Disable the submit button to prevent multiple submissions
+    var submitButton = document.querySelector('#adventure-game-form input[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.value = 'Processing...';
+
+    // Prepare the game state display
+    var gameStateContainer = document.querySelector('.game-state');
+    if (!gameStateContainer) {
+        console.error('Element with class "game-state" not found.');
+        // Re-enable the submit button
+        submitButton.disabled = false;
+        submitButton.value = 'Submit';
+        return;
+    }
+
+    // Show the spinner
+    var spinner = document.querySelector('.spinner');
+    spinner.style.display = 'flex';
+
+
+    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin',
+    })
+    .then(response => response.text())
+        .then(html => {
+            // Replace any Markdown-style bold (**) with <strong> HTML tags
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // Strip out triple backticks if they exist in the response
+            html = html.replace(/```/g, '');
+            
+            // Check if the new response content is the same as the existing content
+            if (gameStateContainer.innerHTML !== html) {
+                // Update the game state content only if it's different
+                gameStateContainer.innerHTML = html;
+            }
+
+
+            // Hide the spinner
+            spinner.style.display = 'none';
+
+            // Re-enable the submit button
+            submitButton.disabled = false;
+            submitButton.value = 'Submit';
+
+            // Re-focus on the input field
+            document.getElementById('user_command').focus();
+        })
+        .catch(error => {
+            console.error(error);
+            gameStateContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
+            // Hide the spinner
+            spinner.style.display = 'none';
+            // Re-enable the submit button
+            submitButton.disabled = false;
+            submitButton.value = 'Submit';
+        });
+    });
+
+    // Event listener for command buttons using event delegation
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('game-command-button')) {
+            var commandText = e.target.textContent.trim();
+            // Set the command in the input field
+            var userCommandInput = document.getElementById('user_command');
+            if (userCommandInput) {
+                userCommandInput.value = commandText;
+                // Submit the form
+                document.getElementById('adventure-game-form').dispatchEvent(new Event('submit', { cancelable: true }));
+            } else {
+                console.error('Input field with id "user_command" not found.');
+            }
+        }
+    });
+</script>
+
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('wp_adventure_game', 'wp_adventure_game_shortcode');
+
+function wp_adventure_game_create_new_game($user_id, $game_state_id = null, $role_id = null) {
+    // Fetch game state
+    if ($game_state_id) {
+        $game_state_post = get_post($game_state_id);
+        $new_game_state = $game_state_post ? $game_state_post->post_content : WP_ADVENTURE_GAME_DEFAULT_STATE;
+    } else {
+        $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE;
+    }
+
+    // Fetch role
+    if ($role_id) {
+        $role_post = get_post($role_id);
+        $role = $role_post ? $role_post->post_content : WP_ADVENTURE_GAME_DEFAULT_ROLE;
+    } else {
+        $role = WP_ADVENTURE_GAME_DEFAULT_ROLE;
+    }
+
+    // Create new game post
+    $game_id = wp_insert_post([
+        'post_title'   => 'Adventure Game',
+        'post_content' => $new_game_state,
+        'post_status'  => 'publish',
+        'post_type'    => 'wp_adventure_game',
+        'post_author'  => $user_id,
+        'meta_input'   => [
+            'game_state_id' => $game_state_id,
+            'role_id'       => $role_id
+        ]
+    ]);
+
+    if (is_wp_error($game_id)) {
+        wp_die('Error: Could not create a new adventure game.');
+    }
+
+    // Save the game ID in user meta
+    update_user_meta($user_id, 'wp_adventure_game_current', $game_id);
+
+    // Redirect to the game page to avoid form resubmission
+    wp_safe_redirect(add_query_arg('game', $game_id, get_permalink()));
+    exit;
+}
+
+// Function to convert Markdown-like content to HTML
+function wp_adventure_game_format_game_content($content) {
+    // Convert **text** to <strong>text</strong>
+    $content = str_replace('**', '<strong>', $content);
+    // Replace double space with the closing </strong>
+    $content = preg_replace('/\s{2}/', '</strong>', $content);
+
+    // Handle the new line characters as <br> tags
+    return nl2br($content);
+}
+
+// Parse the Game State
+function wp_adventure_game_parse_state($state_text) {
+    // Remove Markdown-like formatting (e.g., **bold**)
+    $state_text = preg_replace('/\*\*(.*?)\*\*/', '$1', $state_text);
+
+    // Split by newlines
+    $lines = explode("\n", $state_text);
+    $parsed_state = [];
+    $current_key = null;
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+
+        // Skip empty lines
+        if (empty($line)) {
+            continue;
+        }
+
+        // Look for key-value pairs like "Health: 20/20" or "Turn number: 1"
+        if (strpos($line, ':') !== false) {
+            [$key, $value] = explode(':', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+
+            // Handle commands section separately
+            if (stripos($key, 'Possible Commands') !== false || stripos($key, 'Commands') !== false) {
+                $current_key = 'Possible Commands';
+                $parsed_state[$current_key] = [];
+            } elseif (stripos($key, 'Outcome') !== false) {
+                $current_key = 'Outcome';
+                $parsed_state[$current_key] = $value;
+            } else {
+                $parsed_state[$key] = $value;
+                $current_key = $key;
+            }
+        } else {
+            // Check if the line contains a question and is followed by "Possible Commands"
+            if (preg_match('/\?$/', $line) && preg_match('/^Possible Commands/', $lines[array_search($line, $lines) + 1] ?? '')) {
+                // Append the question to the "Description" field
+                $parsed_state['Description'] .= ' ' . $line;
+            } else {
+                // Append values for previous key (for multiline descriptions, commands)
+                if ($current_key) {
+                    if ($current_key === 'Possible Commands') {
+                        $parsed_state[$current_key][] = $line;
+                    } else {
+                        $parsed_state[$current_key] .= " $line";
+                    }
+                }
+            }
+        }
+    }
+
+    return $parsed_state;
+}
+
+
+// Register AJAX Actions
+add_action('wp_ajax_wp_adventure_game_stream', 'wp_adventure_game_stream_callback');
+
+// Function to Handle the AJAX Request and Return Updated Game State
+function wp_adventure_game_stream_callback() {
+    // Enable error reporting for debugging (disable in production)
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    // Log the start of the callback
+    error_log('wp_adventure_game_stream_callback called');
+
+    // Only allow logged-in users
+    if (!is_user_logged_in()) {
+        echo 'Error: You must be logged in to play.';
+        wp_die();
+    }
+
+    // Get current user and game ID
+    $user_id = get_current_user_id();
+    $current_game_id = get_user_meta($user_id, 'wp_adventure_game_current', true);
+
+    if (!$current_game_id) {
+        echo 'Error: No active game found.';
+        wp_die();
+    }
+
+    // Get current game state
+    $current_game_post = get_post($current_game_id);
+    if (!$current_game_post || $current_game_post->post_author != $user_id) {
+        echo 'Error: Invalid game or permission denied.';
+        wp_die();
+    }
+    $current_state = $current_game_post->post_content;
+
+    // Get user command
+    $user_command = isset($_POST['user_command']) ? sanitize_text_field($_POST['user_command']) : '';
+
+    if (empty($user_command)) {
+        echo 'Error: No command provided.';
+        wp_die();
+    }
+
+    // Check if custom game state and role IDs were passed through the form/shortcode
+    $game_state_id = isset($_POST['game_state']) ? intval($_POST['game_state']) : null;
+    $role_id = isset($_POST['role']) ? intval($_POST['role']) : null;
+
+    // Fallback to default game state and role if no IDs were provided
+    if (!$game_state_id) {
+        $default_game_state_id = get_option('wp_adventure_game_default_state_id');
+        if ($default_game_state_id) {
+            $game_state_id = $default_game_state_id;
+        }
+    }
+
+    if (!$role_id) {
+        $default_role_id = get_option('wp_adventure_game_default_role_id');
+        if ($default_role_id) {
+            $role_id = $default_role_id;
+        }
+    }
+
+    // Check if the role ID exists and is valid, otherwise use the default constant
+    if ($role_id) {
+        $role_post = get_post($role_id);
+        if ($role_post && $role_post->post_type === 'role') {
+            $role = $role_post->post_content;
+        } else {
+            // Default role as fallback
+            $role = WP_ADVENTURE_GAME_DEFAULT_ROLE;
+        }
+    } else {
+        // Default role as fallback
+        $role = WP_ADVENTURE_GAME_DEFAULT_ROLE;
+    }
+
+    // Prepare the prompt with the selected game state and user command
+    $prompt = "$current_state\n\nThe player chose: $user_command. What happens next?";
+
+    // OpenAI API details
+    $api_key = get_option('wp_adventure_gameopenai_api_key');
+    $chatgpt_version = get_option('wp_adventure_gamechatgpt_version', 'gpt-3.5-turbo');
+
+    if (empty($api_key)) {
+        echo 'Error: API key not set.';
+        wp_die();
+    }
+
+    // Prepare API request data
     $postData = [
         'model' => $chatgpt_version,
         'messages' => [
@@ -536,7 +866,7 @@ The player chose: $user_command. What happens next?";
                 'content' => $prompt
             ]
         ],
-        'temperature' => 0.7,
+        'temperature' => 0.5,
         // 'stream' => true, // Removed for non-streaming
     ];
 

@@ -326,13 +326,15 @@ function wp_adventure_game_handle_form_submissions() {
         if ($game_state_id) {
             $game_state_post = get_post($game_state_id);
             if ($game_state_post && $game_state_post->post_type === 'game_state') {
-                $new_game_state = $game_state_post->post_content;
+                $game_state_post = get_post($game_state_id);
+                //$new_game_state = $game_state_post->post_content;
+                $new_game_state = $game_state_post ? $game_state_post->post_content : WP_ADVENTURE_GAME_DEFAULT_STATE;
             } else {
                 $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
             }
-        } else {
+        } /*else {
             $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
-        }
+        }*/
 
         // Check if the role ID exists and is valid, otherwise use the default constant
         if ($role_id) {
@@ -404,8 +406,8 @@ function wp_adventure_game_shortcode($atts) {
 
     // Extract attributes from shortcode
     $atts = shortcode_atts([
-        'game_state' => '', // Custom game state ID
-        'role' => '',       // Custom role ID
+        'game_state' => null, // Custom game state ID
+        'role' => null,       // Custom role ID
     ], $atts, 'wp_adventure_game');
     
     // If custom game_state and role are passed, set a flag

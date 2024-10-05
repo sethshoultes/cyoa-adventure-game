@@ -278,7 +278,7 @@ function wp_adventure_game_create_default_posts() {
         // Create default game state
         $new_game_state_id = wp_insert_post([
             'post_title'   => 'Default Game State',
-            'post_content' => "",// Initial game state
+            'post_content' => WP_ADVENTURE_GAME_DEFAULT_STATE,// Initial game state
             'post_status'  => 'publish',
             'post_type'    => 'game_state',
         ]);
@@ -696,6 +696,16 @@ function wp_adventure_game_create_new_game($user_id, $game_state_id = null, $rol
     exit;
 }
 
+// Function to convert Markdown-like content to HTML
+function wp_adventure_game_format_game_content($content) {
+    // Convert **text** to <strong>text</strong>
+    $content = str_replace('**', '<strong>', $content);
+    // Replace double space with the closing </strong>
+    $content = preg_replace('/\s{2}/', '</strong>', $content);
+
+    // Handle the new line characters as <br> tags
+    return nl2br($content);
+}
 
 // Parse the Game State
 function wp_adventure_game_parse_state($state_text) {

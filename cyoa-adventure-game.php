@@ -328,30 +328,30 @@ function wp_adventure_game_handle_form_submissions() {
             if ($game_state_post && $game_state_post->post_type === 'game_state') {
                 $game_state_post = get_post($game_state_id);
                 //$new_game_state = $game_state_post->post_content;
-                $new_game_state = $game_state_post ? $game_state_post->post_content : WP_ADVENTURE_GAME_DEFAULT_STATE;
+                $game_state_post = $game_state_post ? $game_state_post->post_content : WP_ADVENTURE_GAME_DEFAULT_STATE;
             } else {
-                $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
+                $game_state_post = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
             }
-        } /*else {
-            $new_game_state = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
-        }*/
+        }else {
+            $game_state_post = WP_ADVENTURE_GAME_DEFAULT_STATE; // Fallback
+        }
 
         // Check if the role ID exists and is valid, otherwise use the default constant
         if ($role_id) {
             $role_post = get_post($role_id);
             if ($role_post && $role_post->post_type === 'game_role') {
-                $role = $role_post->post_content;
+                $role_post = $role_post->post_content;
             } else {
-                $role = WP_ADVENTURE_GAME_DEFAULT_ROLE; // Fallback to default role
+                $role_post = WP_ADVENTURE_GAME_DEFAULT_ROLE; // Fallback to default role
             }
         } else {
-            $role = WP_ADVENTURE_GAME_DEFAULT_ROLE; // Fallback to default role
+            $role_post = WP_ADVENTURE_GAME_DEFAULT_ROLE; // Fallback to default role
         }
 
         // Create the new game as a post
         $game_id = wp_insert_post([
             'post_title'   => 'Adventure Game',
-            'post_content' => $new_game_state,
+            'post_content' => $game_state_post,
             'post_status'  => 'publish',
             'post_type'    => 'wp_adventure_game',
             'post_author'  => $user_id,

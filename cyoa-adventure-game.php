@@ -2,7 +2,7 @@
 /*
 Plugin Name: Text Adventure Game with OpenAI Streaming and User Accounts
 Plugin URI: https://github.com/sethshoultes/cyoa-adventure-game
-Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character. Starting games using a custom game state and role is possible with the attributes game_state_id and role_id [wp_adventure_game game_state_id=123 role_id]. This plugin requires an OpenAI API key to function.
+Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character. Starting games using a custom game state and role is possible using URL parameters ?new_adventure=1&role_id=124&game_state_id=123. This plugin requires an OpenAI API key to function.
 Version: 1.1
 Author: Seth Shoultes
 Author URI: https://adventurebuildr.com/
@@ -39,10 +39,10 @@ function my_plugin_auto_update() {
      *
      * If you want to use release assets, call the enableReleaseAssets() method after creating the update checker instance:
      */
-    $myUpdateChecker->getVcsApi()->enableReleaseAssets();
+    //$updateChecker->getVcsApi()->enableReleaseAssets();
 
     // Optional: Set the branch that contains the stable release
-    //$updateChecker->setBranch('main'); // Change 'main' to the branch you use
+    $updateChecker->setBranch('main'); // Change 'main' to the branch you use
 
     // Optional: If your repository is private, add your access token
     // $updateChecker->setAuthentication('your_github_access_token');
@@ -345,6 +345,38 @@ function wp_adventure_game_create_default_posts() {
 
 // Hook to run the function when the plugin is activated
 register_activation_hook(__FILE__, 'wp_adventure_game_create_default_posts');
+
+
+// Add this new function to handle creating a new game based on URL parameters
+function wp_adventure_game_handle_new_game_via_url() {
+    // Only proceed if the user is logged in
+    if (!is_user_logged_in()) {
+        return;
+    }
+
+    // Check if the 'new_adventure' parameter is set in the URL
+    if (isset($_GET['new_adventure'])) {
+        $user_id = get_current_user_id();
+
+        // Get the game_state_id and role_id from URL parameters if provided
+        $game_state_id = isset($_GET['game_state_id']) ? intval($_GET['game_state_id']) : null;
+        $role_id = isset($_GET['role_id']) ? intval($_GET['role_id']) : null;
+
+        // Create a new game with the provided or default parameters
+        wp_adventure_game_create_new_game($user_id, $game_state_id, $role_id);
+
+        // After creating the game, redirect to remove query parameters
+        $redirect_url = remove_query_arg(['new_adventure', 'game_state_id', 'role_id']);
+
+        // Ensure that no output has been sent before redirecting
+        if (!headers_sent()) {
+            wp_safe_redirect($redirect_url);
+            exit;
+        }
+    }
+}
+// Hook the function into 'template_redirect' so it runs before the template is loaded
+add_action('template_redirect', 'wp_adventure_game_handle_new_game_via_url');
 
 
 
@@ -718,8 +750,8 @@ function wp_adventure_game_create_new_game($user_id, $game_state_id = null, $rol
     update_user_meta($user_id, 'wp_adventure_game_current', $game_id);
 
     // Redirect to the game page to avoid form resubmission
-    wp_safe_redirect(add_query_arg('game', $game_id, get_permalink()));
-    exit;
+    //wp_safe_redirect(add_query_arg('game', $game_id, get_permalink()));
+    //exit;
 }
 
 // Function to convert Markdown-like content to HTML

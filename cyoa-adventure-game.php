@@ -55,7 +55,7 @@ if (!defined('WP_ADVENTURE_GAME_DEFAULT_ROLE')) {
     
     6. The player must choose all commands, and the game will list 7 of them at all times under ‘Commands’, and [IMPORTANT]assign them a number 1-7[/IMPORTANT] that I can type to choose that option, and vary the possible selection depending on the actual scene and characters being interacted with.
     
-    7. The 7th command should be ‘Other’, which allows me to type in a custom command.
+    7. The 7th command should be ‘Random Command’, which allows me to send in a random command.
     
     8. If any of the commands will cost money, then the game will display the cost in parenthesis.
     
@@ -132,7 +132,7 @@ if (!defined('WP_ADVENTURE_GAME_DEFAULT_ROLE')) {
     4. {command4}  
     5. {command5}  
     6. {command6}  
-    7. Other
+    7. Random Command
     [/IMPORTANT]
      Start Game.");
 }
@@ -159,7 +159,7 @@ if (!defined('WP_ADVENTURE_GAME_DEFAULT_STATE')) {
         4. Check your equipment before leaving
         5. Write in your journal about the stories you heard
         6. Visit the local blacksmith to inquire about weapon upgrades
-        7. Other");
+        7. Random Command");
 }
 
 function register_adventure_game_cpts() {

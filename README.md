@@ -1,82 +1,178 @@
-# Choose Your Own Adventure Game
-Choose Your Own Adventure Text-Based Game with OpenAI Streaming and User Accounts for WordPress
+# Text Adventure Game with OpenAI Streaming and User Accounts
 
-## Introduction
+A WordPress plugin that brings an interactive text adventure game to your website, powered by OpenAI's API. Users can play the game, manage their characters, and view their adventure history—all integrated seamlessly with WordPress user accounts.
 
-Welcome to the Text Adventure Game with OpenAI Streaming and User Accounts WordPress plugin! This plugin allows you to play a text-based adventure game powered by OpenAI's API, with support for user accounts and customizable game states and roles.
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Shortcodes](#shortcodes)
+  - [Creating a New Adventure](#creating-a-new-adventure)
+  - [Managing Your Character](#managing-your-character)
+  - [Viewing Adventure History](#viewing-adventure-history)
+- [Settings](#settings)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+- **Interactive Gameplay**: An engaging text adventure game inspired by D&D 5e and The Elder Scrolls.
+- **User Accounts**: Each user can start, resume, and manage their own adventures.
+- **OpenAI Integration**: Powered by OpenAI's GPT models for dynamic storytelling.
+- **Character Management**: Users can create and customize their own characters.
+- **Adventure History**: View past adventures and continue where you left off.
+- **Custom Game States and Roles**: Administrators can define custom game states and roles.
+- **Shortcodes**: Easy integration with WordPress pages and posts using shortcodes.
+- **Settings Page**: Configure OpenAI API keys and model versions from the WordPress admin dashboard.
 
 ## Installation
 
-1. Download the plugin files and upload them to your WordPress plugins directory.
-2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. Go to the plugin settings page and enter your OpenAI API key and select the desired ChatGPT model version.
+1. **Download the Plugin:**
+   - Clone or download this repository to your local machine.
 
-## Shortcodes
+2. **Upload to WordPress:**
+   - Upload the plugin files to the `/wp-content/plugins/` directory of your WordPress installation.
 
-The plugin provides the following shortcodes:
+3. **Activate the Plugin:**
+   - Go to the **Plugins** menu in WordPress and activate the **Text Adventure Game with OpenAI Streaming and User Accounts** plugin.
 
-- `[wp_adventure_game]`: Displays the main adventure game interface. You can optionally pass the `game_state`, `role`, and `game_id` attributes to specify custom game state, role, and game ID.
-- `[adventure_game_history]`: Displays the user's adventure game history.
-- `[adventure_game_character]`: Allows users to create and manage their game characters.
+4. **Configure OpenAI API Key:**
+   - Navigate to **Settings > Adventure Game** in the WordPress admin dashboard.
+   - Enter your OpenAI API Key and select the desired ChatGPT model version.
+   - **Note**: You must have an OpenAI API key to use this plugin.
 
-## Playing the Game
+## Usage
 
-To start playing the game, simply use the `[wp_adventure_game]` shortcode on any page or post. If you're not logged in, you'll be prompted to log in first.
+### Shortcodes
 
-If you haven't started a game yet, you'll see a "Start New Adventure" button. Click on it to begin a new game.
+- `[wp_adventure_game]`: Displays the adventure game interface.
+- `[adventure_game_history]`: Shows the user's past adventures.
+- `[adventure_game_character]`: Allows users to manage their character.
 
-During the game, you'll see the current game state, including your character's stats, inventory, and available commands. To perform an action, either type your command in the input field and click "Submit," or click on one of the provided command buttons.
+### Creating a New Adventure
 
-The game will generate a response based on your action and update the game state accordingly.
+1. **Start the Game:**
+   - Insert the `[wp_adventure_game]` shortcode into a page or post.
+   - Users must be logged in to start a new adventure.
+2. **Gameplay:**
+   - The game presents a scenario with possible commands.
+   - Users enter a command to progress through the adventure.
+3. **Saving Progress:**
+   - The game state is saved automatically after each action.
+   - Users can resume their game anytime by revisiting the game page.
 
-## Loading Specific Games
+### Managing Your Character
 
-You can load a specific game by passing the `game_id` attribute to the `[wp_adventure_game]` shortcode. For example:
+1. **Access the Character Builder:**
+   - Insert the `[adventure_game_character]` shortcode into a page or post.
+2. **Create or Edit Character:**
+   - Fill in character details like name, race, class, attributes, skills, and backstory.
+   - Save the character to update your game profile.
 
-```
-[wp_adventure_game game_id="123"]
-```
+### Viewing Adventure History
 
-This will load the game with the specified ID. If no `game_id` is provided, the latest game for the user will be loaded or a new game will be created.
+1. **Access Adventure History:**
+   - Insert the `[adventure_game_history]` shortcode into a page or post.
+2. **View Past Adventures:**
+   - Users can see a list of their previous adventures.
+   - Each adventure displays the date and the content of the game at that point.
 
-## Customizing Game States and Roles
+### Clearing Adventure History
 
-The plugin allows you to create custom game states and roles using the WordPress admin interface.
-
-### Game States
-
-1. Go to the "Game States" menu in the WordPress admin sidebar.
-2. Click "Add New" to create a new game state.
-3. Enter a title and the desired game state content in the editor.
-4. Publish the game state.
-
-### Roles
-
-1. Go to the "Game Roles" menu in the WordPress admin sidebar.
-2. Click "Add New" to create a new role.
-3. Enter a title and the desired role content in the editor.
-4. Publish the role.
-
-To use a custom game state or role, pass the respective ID as the `game_state` or `role` attribute in the `[wp_adventure_game]` shortcode.
-
-## Character Management
-
-Users can create and manage their game characters using the `[adventure_game_character]` shortcode.
-
-They can set their character's name, race, class, attributes, skills, and backstory. The character information will be used during the game to determine the outcomes of certain actions.
-
-## Adventure History
-
-Users can view their past adventures using the `[adventure_game_history]` shortcode. This will display a list of their previous games, along with the date and time they were played.
-
-Users can also clear their adventure history by clicking the "Clear Adventure History" button on the main game page.
+- Users can clear their adventure history from the game interface.
+- **Note**: This action cannot be undone.
 
 ## Settings
 
-The plugin settings can be accessed through the WordPress admin menu under "Adventure Game."
+Access the plugin settings by navigating to **Settings > Adventure Game** in the WordPress admin dashboard.
 
-Here, you can enter your OpenAI API key and select the desired ChatGPT model version (GPT-3.5 Turbo or GPT-4).
+- **OpenAI API Key**: Enter your OpenAI API key.
+- **ChatGPT Model Version**: Choose between `gpt-3.5-turbo` (fast) and `gpt-4` (slow).
 
-## Conclusion
+## Contributing
 
-That's it! You're now ready to embark on exciting text adventures powered by OpenAI. Have fun, and happy gaming!
+Contributions are welcome! Please submit a pull request or open an issue to discuss any changes or enhancements.
+
+## License
+
+This plugin is licensed under the GPL2 license. See the [LICENSE](https://www.gnu.org/licenses/gpl-2.0.html) file for details.
+
+---
+
+**Disclaimer**: This plugin requires an OpenAI API key, which may incur costs based on usage. Please monitor your OpenAI account to avoid unexpected charges.
+
+# Shortcode Examples
+
+- **Display the Adventure Game:**
+
+  ```html
+  [wp_adventure_game]
+  ```
+
+- **Display Adventure History:**
+
+  ```html
+  [adventure_game_history]
+  ```
+
+- **Display Character Management Form:**
+
+  ```html
+  [adventure_game_character]
+  ```
+
+# Screenshots
+
+*(Screenshots coming soon)*
+
+1. **Game Interface:** The main adventure game screen where users input commands.
+2. **Character Builder:** The form for creating or editing a character.
+3. **Adventure History:** A list of past adventures with timestamps.
+4. **Settings Page:** The admin settings page for configuring OpenAI API keys.
+
+# Changelog
+
+### Version 1.0
+
+- Initial release of the Text Adventure Game with OpenAI Streaming and User Accounts plugin.
+
+---
+
+**Note:** This plugin integrates with the OpenAI API. Ensure you comply with OpenAI's policies and terms of service when using this plugin.
+
+# Feedback and Support
+
+For issues, suggestions, or contributions, please open an issue on the [GitHub repository](#).
+
+# Acknowledgements
+
+- Inspired by Dungeons & Dragons 5e and The Elder Scrolls series.
+- Powered by [OpenAI](https://www.openai.com/) GPT models.
+
+# Roadmap
+
+- **Feature Enhancements:**
+  - Implement game state serialization for improved performance.
+  - Add more customization options for game mechanics and rules.
+- **Localization:**
+  - Provide translations for internationalization.
+
+# Author
+
+Developed by [Seth Shoultes](https://smartwebutah.com).
+
+# Donation
+
+If you find this plugin useful, consider supporting its development:
+
+- [PayPal](#)
+- [Buy Me a Coffee](#)
+
+# Disclaimer
+
+This is an open-source project provided as-is. The developer is not responsible for any unintended consequences arising from its use.
+
+---
+
+Thank you for using the Text Adventure Game with OpenAI Streaming and User Accounts plugin!

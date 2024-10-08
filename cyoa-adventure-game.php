@@ -1,13 +1,43 @@
 <?php
 /*
 Plugin Name: Text Adventure Game with OpenAI Streaming and User Accounts
-Plugin URI: https://smartwebutah.com
-Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character.
+Plugin URI: https://github.com/sethshoultes/cyoa-adventure-game
+Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character. Starting games using a custom game state and role is possible with the attributes game_state_id and role_id [wp_adventure_game game_state_id=123 role_id]. This plugin requires an OpenAI API key to function.
 Version: 1.0
 Author: Seth Shoultes
-Author URI: https://smartwebutah.com
+Author URI: https://adventurebuildr.com/
 License: GPL2
 */
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+/**
+ * Initialize the plugin update checker.
+ */
+function my_plugin_auto_update() {
+    // Include the library if it's not already included
+    if ( ! class_exists( '\\YahnisElsts\\PluginUpdateChecker\\PluginUpdateChecker' ) ) {
+        require_once plugin_dir_path( __FILE__ ) . 'includes/plugin-update-checker/plugin-update-checker.php';
+    }
+
+    // Replace these variables with your own repository details
+    $github_username   = 'sethshoultes';
+    $github_repository = 'cyoa-adventure-game';
+    $plugin_slug       = 'cyoa-adventure-game'; // This should match the plugin's folder name
+
+    // Initialize the update checker
+    $updateChecker = PucFactory::buildUpdateChecker(
+        "https://github.com/{$github_username}/{$github_repository}/",
+        __FILE__,
+        $plugin_slug
+    );
+
+    // Optional: Set the branch that contains the stable release
+    $updateChecker->setBranch('main'); // Change 'main' to the branch you use
+
+    // Optional: If your repository is private, add your access token
+    // $updateChecker->setAuthentication('your_github_access_token');
+}
+add_action( 'init', 'my_plugin_auto_update' );
 
 // Enqueue Styles
 function wp_adventure_game_enqueue_styles() {
@@ -1232,3 +1262,5 @@ function wp_adventure_game_clear_history() {
     }
 }
 add_action('template_redirect', 'wp_adventure_game_clear_history');
+
+

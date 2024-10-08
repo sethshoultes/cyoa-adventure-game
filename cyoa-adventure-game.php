@@ -39,10 +39,10 @@ function my_plugin_auto_update() {
      *
      * If you want to use release assets, call the enableReleaseAssets() method after creating the update checker instance:
      */
-    $myUpdateChecker->getVcsApi()->enableReleaseAssets();
+    //$updateChecker->getVcsApi()->enableReleaseAssets();
 
     // Optional: Set the branch that contains the stable release
-    //$updateChecker->setBranch('main'); // Change 'main' to the branch you use
+    $updateChecker->setBranch('main'); // Change 'main' to the branch you use
 
     // Optional: If your repository is private, add your access token
     // $updateChecker->setAuthentication('your_github_access_token');

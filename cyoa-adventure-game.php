@@ -3,7 +3,7 @@
 Plugin Name: Text Adventure Game with OpenAI Streaming and User Accounts
 Plugin URI: https://github.com/sethshoultes/cyoa-adventure-game
 Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character. Starting games using a custom game state and role is possible with the attributes game_state_id and role_id [wp_adventure_game game_state_id=123 role_id]. This plugin requires an OpenAI API key to function.
-Version: 1.0
+Version: 1.1
 Author: Seth Shoultes
 Author URI: https://adventurebuildr.com/
 License: GPL2
@@ -31,8 +31,18 @@ function my_plugin_auto_update() {
         $plugin_slug
     );
 
+    /*
+     * Create a new release using the "Releases" feature on GitHub. The tag name and release title don't matter. 
+     * The description is optional, but if you do provide one, it will be displayed when the user clicks the 
+     * "View version x.y.z details" link on the "Plugins" page. Note that PUC ignores releases marked as 
+     * "This is a pre-release".
+     *
+     * If you want to use release assets, call the enableReleaseAssets() method after creating the update checker instance:
+     */
+    $myUpdateChecker->getVcsApi()->enableReleaseAssets();
+
     // Optional: Set the branch that contains the stable release
-    $updateChecker->setBranch('main'); // Change 'main' to the branch you use
+    //$updateChecker->setBranch('main'); // Change 'main' to the branch you use
 
     // Optional: If your repository is private, add your access token
     // $updateChecker->setAuthentication('your_github_access_token');

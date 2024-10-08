@@ -406,8 +406,8 @@ function wp_adventure_game_shortcode($atts) {
 
     // Extract attributes from shortcode
     $atts = shortcode_atts([
-        'game_state' => null, // Custom game state ID
-        'role' => null,       // Custom role ID
+        'game_state_id' => null, // Custom game state ID
+        'role_id' => null,       // Custom role ID
     ], $atts, 'wp_adventure_game');
     
     // If custom game_state and role are passed, set a flag
@@ -456,22 +456,6 @@ function wp_adventure_game_shortcode($atts) {
     $current_state = $current_game_post ? $current_game_post->post_content : '';
     $parsed_state = wp_adventure_game_parse_state($current_state);
 
-
-
-    // Fetch the default game state and role if no shortcode parameters are passed
-    if (empty($atts['game_state'])) {
-        $default_game_state = get_posts([
-            'post_type' => 'game_state',
-            'title'     => 'Default Game State',
-            'post_status' => 'publish',
-            'numberposts' => 1,
-        ]);
-        $new_game_state = !empty($default_game_state) ? $default_game_state[0]->post_content : 'Default game state';
-    } else {
-        $game_state_post = get_post($atts['game_state']);
-        $new_game_state = $game_state_post ? $game_state_post->post_content : 'Default game state';
-    }
-
     // If there's no current game, prompt to start a new one
     if (!$current_game_id) {
         ob_start();
@@ -513,8 +497,8 @@ function wp_adventure_game_shortcode($atts) {
             <input type="submit" value="Submit" />
         </form>
         <form method="POST" style="margin-top: 10px;">
-            <input type="hidden" name="game_state" value="<?php echo esc_attr($atts['game_state']); ?>" />
-            <input type="hidden" name="role" value="<?php echo esc_attr($atts['role']); ?>" />
+            <input type="hidden" name="game_state" value="<?php echo esc_attr($atts['game_state_id']); ?>" />
+            <input type="hidden" name="role" value="<?php echo esc_attr($atts['role_id']); ?>" />
             <input type="submit" name="new_adventure" value="Start New Adventure" class="start-new-adventure-button" />
         </form>
        

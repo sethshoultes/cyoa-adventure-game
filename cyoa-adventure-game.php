@@ -1,13 +1,53 @@
 <?php
 /*
 Plugin Name: Text Adventure Game with OpenAI Streaming and User Accounts
-Plugin URI: https://smartwebutah.com
-Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character.
-Version: 1.0
+Plugin URI: https://github.com/sethshoultes/cyoa-adventure-game
+Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character. Starting games using a custom game state and role is possible with the attributes game_state_id and role_id [wp_adventure_game game_state_id=123 role_id]. This plugin requires an OpenAI API key to function.
+Version: 1.1
 Author: Seth Shoultes
-Author URI: https://smartwebutah.com
+Author URI: https://adventurebuildr.com/
 License: GPL2
 */
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+/**
+ * Initialize the plugin update checker.
+ */
+function my_plugin_auto_update() {
+    // Include the library if it's not already included
+    if ( ! class_exists( '\\YahnisElsts\\PluginUpdateChecker\\PluginUpdateChecker' ) ) {
+        require_once plugin_dir_path( __FILE__ ) . 'includes/plugin-update-checker/plugin-update-checker.php';
+    }
+
+    // Replace these variables with your own repository details
+    $github_username   = 'sethshoultes';
+    $github_repository = 'cyoa-adventure-game';
+    $plugin_slug       = 'cyoa-adventure-game'; // This should match the plugin's folder name
+
+    // Initialize the update checker
+    $updateChecker = PucFactory::buildUpdateChecker(
+        "https://github.com/{$github_username}/{$github_repository}/",
+        __FILE__,
+        $plugin_slug
+    );
+
+    /*
+     * Create a new release using the "Releases" feature on GitHub. The tag name and release title don't matter. 
+     * The description is optional, but if you do provide one, it will be displayed when the user clicks the 
+     * "View version x.y.z details" link on the "Plugins" page. Note that PUC ignores releases marked as 
+     * "This is a pre-release".
+     *
+     * If you want to use release assets, call the enableReleaseAssets() method after creating the update checker instance:
+     */
+    $myUpdateChecker->getVcsApi()->enableReleaseAssets();
+
+    // Optional: Set the branch that contains the stable release
+    //$updateChecker->setBranch('main'); // Change 'main' to the branch you use
+
+    // Optional: If your repository is private, add your access token
+    // $updateChecker->setAuthentication('your_github_access_token');
+}
+add_action( 'init', 'my_plugin_auto_update' );
 
 // Enqueue Styles
 function wp_adventure_game_enqueue_styles() {
@@ -1232,3 +1272,5 @@ function wp_adventure_game_clear_history() {
     }
 }
 add_action('template_redirect', 'wp_adventure_game_clear_history');
+
+

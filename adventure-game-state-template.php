@@ -26,23 +26,41 @@ if ($character) {
 
 <div class="game-status">
     <h3>Game Status</h3>
-    <?php if (isset($parsed_state['Stardate'])): ?><p><strong>Stardate:</strong> <?php echo esc_html($parsed_state['Stardate']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Mission day'])): ?><p><strong>Mission Day:</strong> <?php echo esc_html($parsed_state['Mission day']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Space conditions'])): ?><p><strong>Space Conditions:</strong> <?php echo esc_html($parsed_state['Space conditions']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Shields'])): ?><p><strong>Shields:</strong> <?php echo esc_html($parsed_state['Shields']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Rank'])): ?><p><strong>Rank:</strong> <?php echo esc_html($parsed_state['Rank']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Turn number'])): ?><p><strong>Turn:</strong> <?php echo esc_html($parsed_state['Turn number']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['Stardate'])): ?><p><strong>Stardate:</strong> <?php echo esc_html($parsed_state['Stardate']); ?></p><?php endif; ?>
+        <?php if (isset($parsed_state['Mission day'])): ?>
+        <p><strong>Mission Day:</strong> <?php echo esc_html($parsed_state['Mission day']); ?></p>
+    <?php else: ?>
+        <?php if (isset($parsed_state['Current day number'])): ?><p><strong>Day:</strong> <?php echo esc_html($parsed_state['Current day number']); ?></p><?php endif; ?>
+    <?php endif; ?>
+    <?php if (isset($parsed_state['Space conditions'])): ?>
+        <p><strong>Space Conditions:</strong> <?php echo esc_html($parsed_state['Space conditions']); ?></p>
+    <?php else: ?>
+        <?php if (isset($parsed_state['Weather'])): ?><p><strong>Weather:</strong> <?php echo esc_html($parsed_state['Weather']); ?></p><?php endif; ?>
+    <?php endif; ?>
+    <?php if (isset($parsed_state['Shift'])): ?><p><strong>Shift:</strong> <?php echo esc_html($parsed_state['Shift']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Time period of the day'])): ?><p><strong>Time:</strong> <?php echo esc_html($parsed_state['Time period of the day']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Current day number'])): ?><p><strong>Day:</strong> <?php echo esc_html($parsed_state['Current day number']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Weather'])): ?><p><strong>Weather:</strong> <?php echo esc_html($parsed_state['Weather']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['Location'])): ?><p><strong>Location:</strong> <?php echo esc_html($parsed_state['Location']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['Shields'])): ?><p><strong>Shields:</strong> <?php echo esc_html($parsed_state['Shields']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['Rank'])): ?>
+        <p><strong>Rank:</strong> <?php echo esc_html($parsed_state['Rank']); ?></p>
+    <?php elseif (isset($parsed_state['Level'])): ?>
+        <p><strong>Level:</strong> <?php echo esc_html($parsed_state['Level']); ?></p>
+    <?php endif; ?>
+    <?php if (isset($parsed_state['Wearing'])) echo '<p><strong>Wearing:</strong> ' . esc_html($parsed_state['Wearing']) . '</p>'; ?>
+
+    <?php if (isset($parsed_state['Job Title'])): ?><p><strong>Job Title:</strong> <?php echo esc_html($parsed_state['Job Title']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['Employee Performance Score'])): ?><p><strong>Employee Performance Score:</strong> <?php echo esc_html($parsed_state['Employee Performance Score']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Health'])): ?><p><strong>Health:</strong> <?php echo esc_html($parsed_state['Health']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['XP'])): ?><p><strong>XP:</strong> <?php echo esc_html($parsed_state['XP']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['AC'])): ?><p><strong>AC:</strong> <?php echo esc_html($parsed_state['AC']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Level'])): ?><p><strong>Level:</strong> <?php echo esc_html($parsed_state['Level']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Location'])): ?><p><strong>Location:</strong> <?php echo esc_html($parsed_state['Location']); ?></p><?php endif; ?>
+   
     <?php if (isset($parsed_state['Coins'])): ?><p><strong>Coins:</strong> <?php echo esc_html($parsed_state['Coins']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['Credits'])): ?><p><strong>Credits:</strong> <?php echo esc_html($parsed_state['Credits']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['FartCoins'])): ?><p><strong>FartCoins:</strong> <?php echo esc_html($parsed_state['FartCoins']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Quest'])) echo '<p><strong>Quest:</strong> ' . esc_html($parsed_state['Quest']) . '</p>'; ?>
+    <?php if (isset($parsed_state['Task'])) echo '<p><strong>Task:</strong> ' . esc_html($parsed_state['Task']) . '</p>'; ?>
+    <?php if (isset($parsed_state['Mission'])): ?><p><strong>Mission:</strong> <?php echo esc_html($parsed_state['Mission']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['Current Project'])) echo '<p><strong>Current Project:</strong> ' . esc_html($parsed_state['Current Project']) . '</p>'; ?>
     <?php if (isset($parsed_state['Inventory'])) echo '<p><strong>Inventory:</strong> ' . esc_html($parsed_state['Inventory']) . '</p>'; ?>
     <?php if (isset($parsed_state['Abilities'])) echo '<p><strong>Abilities:</strong> ' . esc_html($parsed_state['Abilities']) . '</p>'; ?>
 </div>

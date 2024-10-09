@@ -57,7 +57,6 @@ add_action('wp_enqueue_scripts', 'wp_adventure_game_enqueue_styles');
 
 require_once plugin_dir_path( __FILE__ ) . 'includes/default-game-instructions.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/audio-file-cleanup.php';
-require_once plugin_dir_path( __FILE__ ) . 'includes/custom-post-types.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/settings.php';
 
 // Add this new function to handle creating a new game based on URL parameters
@@ -736,6 +735,7 @@ add_action('wp_ajax_wp_adventure_game_stream', 'wp_adventure_game_stream_callbac
 // Function to generate audio from text using OpenAI TTS API
 function wp_adventure_game_generate_audio($text) {
     $api_key = get_option('wp_adventure_gameopenai_api_key');
+    $voice = get_option('wp_adventure_gamechatgpt_audio_version');
 
     if (empty($api_key)) {
         error_log('Error: API key not set.');
@@ -746,7 +746,7 @@ function wp_adventure_game_generate_audio($text) {
     $postData = [
         'model' => 'tts-1', // or 'tts-1-hd', depending on your preference
         'input' => $text,
-        'voice' => 'alloy', // Replace with the desired voice: alloy, echo, fable, onyx, nova, shimmer
+        'voice' => $voice, // Replace with the desired voice: alloy, echo, fable, onyx, nova, shimmer
         // Optional parameters
         'response_format' => 'mp3', // Can be 'mp3', 'opus', 'aac', 'flac', 'wav', or 'pcm'
         'speed' => 1, // Speed of the generated audio (0.25 to 4.0)

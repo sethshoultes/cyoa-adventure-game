@@ -556,7 +556,12 @@ function wp_adventure_game_shortcode($atts) {
         <h2>Text Adventure Game</h2>
         <div class="game-state">
             <?php
-            include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
+            $template_path = get_template_directory() . '/adventure-game-state-template.php';
+            if (file_exists($template_path)) {
+                include $template_path;
+            } else {
+                include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
+            }
             ?>
         </div>
         <div class="spinner" style="display: none;">
@@ -987,10 +992,14 @@ function wp_adventure_game_stream_callback() {
     // Clear the stored "Outcome" field
     unset($parsed_state['Outcome']);
 
-
     // Generate the updated HTML
     ob_start();
-    include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
+    $template_path = get_template_directory() . '/adventure-game-state-template.php';
+    if (file_exists($template_path)) {
+        include $template_path;
+    } else {
+        include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
+    }
     $updated_html = ob_get_clean();
 
     // Return the updated HTML

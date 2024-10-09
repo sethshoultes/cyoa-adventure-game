@@ -1011,6 +1011,8 @@ function wp_adventure_game_stream_callback() {
     // Clear the stored "Outcome" field
     unset($parsed_state['Outcome']);
 
+    
+
     // Generate the updated HTML
     ob_start();
     $template_path = get_template_directory() . '/adventure-game-state-template.php';
@@ -1020,9 +1022,12 @@ function wp_adventure_game_stream_callback() {
         include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
     }
     $updated_html = ob_get_clean();
+    
+    // Extract the 'Description' field
+    $description_text = isset($parsed_state['Description']) ? $parsed_state['Description'] : '';
 
-    // Now, generate the audio using OpenAI TTS API
-    $audio_url = wp_adventure_game_generate_audio($content);
+    // Now, generate the audio using the 'Description' field
+    $audio_url = wp_adventure_game_generate_audio($description_text);
 
     // Prepare the response data
     $response_data = [

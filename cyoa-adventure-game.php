@@ -648,7 +648,7 @@ function wp_adventure_game_parse_state($state_text) {
     $state_text = preg_replace('/\*\*(.*?)\*\*/', '$1', $state_text);
 
     // Split by newlines
-    $lines = explode("\n", $state_text);
+    $lines = preg_split('/\r\n|\r|\n/', $state_text);
     $parsed_state = [];
     $current_key = null;
 
@@ -661,35 +661,25 @@ function wp_adventure_game_parse_state($state_text) {
         }
 
         // Look for key-value pairs like "Health: 20/20" or "Turn number: 1"
-        if (strpos($line, ':') !== false) {
-            [$key, $value] = explode(':', $line, 2);
-            $key = trim($key);
-            $value = trim($value);
+        if (preg_match('/^([^\:]+):\s*(.*)$/', $line, $matches)) {
+            $key = trim($matches[1]);
+            $value = trim($matches[2]);
 
-            // Handle commands section separately
-            if (stripos($key, 'Possible Commands') !== false || stripos($key, 'Commands') !== false) {
+            // Handle 'Possible Commands' separately
+            if (stripos($key, 'Possible Commands') !== false) {
                 $current_key = 'Possible Commands';
                 $parsed_state[$current_key] = [];
-            } elseif (stripos($key, 'Outcome') !== false) {
-                $current_key = 'Outcome';
-                $parsed_state[$current_key] = $value;
             } else {
                 $parsed_state[$key] = $value;
                 $current_key = $key;
             }
         } else {
-            // Check if the line contains a question and is followed by "Possible Commands"
-            if (preg_match('/\?$/', $line) && preg_match('/^Possible Commands/', $lines[array_search($line, $lines) + 1] ?? '')) {
-                // Append the question to the "Description" field
-                $parsed_state['Description'] .= ' ' . $line;
-            } else {
-                // Append values for previous key (for multiline descriptions, commands)
-                if ($current_key) {
-                    if ($current_key === 'Possible Commands') {
-                        $parsed_state[$current_key][] = $line;
-                    } else {
-                        $parsed_state[$current_key] .= " $line";
-                    }
+            // Handle multiline values
+            if ($current_key) {
+                if ($current_key === 'Possible Commands') {
+                    $parsed_state[$current_key][] = $line;
+                } else {
+                    $parsed_state[$current_key] .= " $line";
                 }
             }
         }
@@ -836,9 +826,18 @@ function wp_adventure_game_stream_callback() {
         wp_die();
     }
 
-    // After generating the content, clean it up before rendering
-    $content = strip_tags($content, '<p><strong><em><br><ol><ul><li>');  // Allow basic HTML tags
+    // Parse the new content to extract 'Description' field
+    $parsed_new_content = wp_adventure_game_parse_state($content);
 
+    // Extract the 'Description' field from the new content
+    $description_text = isset($parsed_new_content['Description']) ? $parsed_new_content['Description'] : '';
+
+    // Now, generate the audio using the 'Description' field
+    if (!empty($description_text)) {
+        $audio_url = wp_adventure_game_generate_audio($description_text);
+    } else {
+        $audio_url = null;
+    }
 
     // Append new content to the current game state
     $updated_state = $current_state . "\n\n" . $content;
@@ -861,16 +860,7 @@ function wp_adventure_game_stream_callback() {
         include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
     }
     $updated_html = ob_get_clean();
-    
-    // Extract the 'Description' field
-    $description_text = isset($parsed_state['Description']) ? $parsed_state['Description'] : '';
 
-    // Now, generate the audio using the 'Description' field
-    if (!empty($description_text)) {
-        $audio_url = wp_adventure_game_generate_audio($description_text);
-    } else {
-        $audio_url = null;
-    }
 
     // Prepare the response data
     $response_data = [

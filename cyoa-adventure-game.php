@@ -816,7 +816,7 @@ function wp_adventure_game_stream_callback() {
     $api_response = json_decode($response, true);
 
     // Log the API response for debugging
-    error_log('OpenAI API Response: ' . print_r($api_response, true));
+    //error_log('OpenAI API Response: ' . print_r($api_response, true));
 
     // Check for errors in the response
     if (isset($api_response['error'])) {
@@ -851,10 +851,6 @@ function wp_adventure_game_stream_callback() {
 
     // Parse the game state on the server side for display
     $parsed_state = wp_adventure_game_parse_state($updated_state);
-    // Clear the stored "Outcome" field
-    //unset($parsed_state['Outcome']);
-
-    
 
     // Generate the updated HTML
     ob_start();
@@ -885,6 +881,7 @@ function wp_adventure_game_stream_callback() {
     // Return the response as JSON
     wp_send_json_success($response_data);
 }
+
 // Register AJAX Actions
 add_action('wp_ajax_wp_adventure_game_stream', 'wp_adventure_game_stream_callback');
 

@@ -23,7 +23,6 @@ if ($character) {
     $backstory = esc_html($character['Backstory'] ?? 'No backstory available.');
 }
 ?>
-
 <div class="game-status">
     <h3>Game Status</h3>
     <?php if (isset($parsed_state['Turn number'])): ?><p><strong>Turn:</strong> <?php echo esc_html($parsed_state['Turn number']); ?></p><?php endif; ?>
@@ -64,7 +63,6 @@ if ($character) {
     <?php if (isset($parsed_state['Inventory'])) echo '<p><strong>Inventory:</strong> ' . esc_html($parsed_state['Inventory']) . '</p>'; ?>
     <?php if (isset($parsed_state['Abilities'])) echo '<p><strong>Abilities:</strong> ' . esc_html($parsed_state['Abilities']) . '</p>'; ?>
 </div>
-
 <?php if (!empty($character)): ?>
     <div class="character-data">
         <h3>Character Data</h3>
@@ -90,18 +88,10 @@ if ($character) {
         <p><?php echo $backstory; ?></p>
     </div>
 <?php endif; ?>
-
 <div class="game-description">
     <h3>Description</h3>
     <p><?php echo nl2br(esc_html($parsed_state['Description'] ?? '')); ?></p>
 </div>
-<?php if (isset($parsed_state['Outcome'])): ?>
-    <div class="game-outcome">
-        <h3>Outcome</h3>
-        <p><?php echo nl2br(esc_html($parsed_state['Outcome'])); ?></p>
-    </div>
-<?php endif; ?>
-
 <?php if (!empty($parsed_state['Possible Commands'])): ?>
     <div class="game-commands">
         <h3>Possible Commands</h3>

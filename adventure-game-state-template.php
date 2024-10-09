@@ -112,3 +112,10 @@ if ($character) {
         </div>
     </div>
 <?php endif; ?>
+<div class="game-audio">
+    <h3>Audio Narration</h3>
+    <audio id="game-audio-player" controls>
+        <!-- The source will be set dynamically via JavaScript -->
+        Your browser does not support the audio element.
+    </audio>
+</div>

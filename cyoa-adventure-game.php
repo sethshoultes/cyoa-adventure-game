@@ -618,61 +618,70 @@ function wp_adventure_game_shortcode($atts) {
 
     <script>
     document.getElementById('adventure-game-form').addEventListener('submit', function(e) {
-    e.preventDefault();  // Prevent the form from submitting the normal way
-    var userCommand = document.getElementById('user_command').value.trim();
+        e.preventDefault();  // Prevent the form from submitting the normal way
+        var userCommand = document.getElementById('user_command').value.trim();
 
-    if (userCommand === '') {
-        alert('Please enter a command.');
-        return;
-    }
+        if (userCommand === '') {
+            alert('Please enter a command.');
+            return;
+        }
 
-    // Prepare the data to send
-    var data = new FormData();
-    data.append('action', 'wp_adventure_game_stream');  // Ensure this matches the registered AJAX action
-    data.append('user_command', userCommand);
+        // Prepare the data to send
+        var data = new FormData();
+        data.append('action', 'wp_adventure_game_stream');  // Ensure this matches the registered AJAX action
+        data.append('user_command', userCommand);
 
-    // Clear the input field
-    document.getElementById('user_command').value = '';
+        // Clear the input field
+        document.getElementById('user_command').value = '';
 
-    // Disable the submit button to prevent multiple submissions
-    var submitButton = document.querySelector('#adventure-game-form input[type="submit"]');
-    submitButton.disabled = true;
-    submitButton.value = 'Processing...';
+        // Disable the submit button to prevent multiple submissions
+        var submitButton = document.querySelector('#adventure-game-form input[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.value = 'Processing...';
 
-    // Prepare the game state display
-    var gameStateContainer = document.querySelector('.game-state');
-    if (!gameStateContainer) {
-        console.error('Element with class "game-state" not found.');
-        // Re-enable the submit button
-        submitButton.disabled = false;
-        submitButton.value = 'Submit';
-        return;
-    }
+        // Prepare the game state display
+        var gameStateContainer = document.querySelector('.game-state');
+        if (!gameStateContainer) {
+            console.error('Element with class "game-state" not found.');
+            // Re-enable the submit button
+            submitButton.disabled = false;
+            submitButton.value = 'Submit';
+            return;
+        }
 
-    // Show the spinner
-    var spinner = document.querySelector('.spinner');
-    spinner.style.display = 'flex';
+        // Show the spinner
+        var spinner = document.querySelector('.spinner');
+        spinner.style.display = 'flex';
 
 
-    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-        method: 'POST',
-        body: data,
-        credentials: 'same-origin',
-    })
-    .then(response => response.text())
-        .then(html => {
-            // Replace any Markdown-style bold (**) with <strong> HTML tags
-            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+            method: 'POST',
+            body: data,
+            credentials: 'same-origin',
+        })
+        .then(response => response.json())
+        .then(data => {
+        if (data.success) {
+            var html = data.data.html;
+            var audioUrl = data.data.audio_url;
 
-            // Strip out triple backticks if they exist in the response
-            html = html.replace(/```/g, '');
-            
-            // Check if the new response content is the same as the existing content
-            if (gameStateContainer.innerHTML !== html) {
-                // Update the game state content only if it's different
-                gameStateContainer.innerHTML = html;
+            // Update the game state content
+            gameStateContainer.innerHTML = html;
+
+            // Update the audio player
+            if (audioUrl) {
+                var audioPlayer = document.getElementById('game-audio-player');
+                if (audioPlayer) {
+                    audioPlayer.src = audioUrl;
+                    // Optionally, play the audio automatically if allowed
+                    audioPlayer.play().catch(function(error) {
+                        // Autoplay might be blocked; handle errors if needed
+                        console.log('Autoplay was prevented:', error);
+                    });
+                } else {
+                    console.error('Audio player element not found.');
+                }
             }
-
 
             // Hide the spinner
             spinner.style.display = 'none';
@@ -683,32 +692,42 @@ function wp_adventure_game_shortcode($atts) {
 
             // Re-focus on the input field
             document.getElementById('user_command').focus();
-        })
-        .catch(error => {
-            console.error(error);
+        } else {
+            // Handle error
+            console.error('Error:', data.data);
             gameStateContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
             // Hide the spinner
             spinner.style.display = 'none';
             // Re-enable the submit button
             submitButton.disabled = false;
             submitButton.value = 'Submit';
-        });
-    });
-
-    // Event listener for command buttons using event delegation
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('game-command-button')) {
-            var commandText = e.target.textContent.trim();
-            // Set the command in the input field
-            var userCommandInput = document.getElementById('user_command');
-            if (userCommandInput) {
-                userCommandInput.value = commandText;
-                // Submit the form
-                document.getElementById('adventure-game-form').dispatchEvent(new Event('submit', { cancelable: true }));
-            } else {
-                console.error('Input field with id "user_command" not found.');
-            }
         }
+    })
+            .catch(error => {
+                console.error(error);
+                gameStateContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
+                // Hide the spinner
+                spinner.style.display = 'none';
+                // Re-enable the submit button
+                submitButton.disabled = false;
+                submitButton.value = 'Submit';
+            });
+        });
+
+        // Event listener for command buttons using event delegation
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('game-command-button')) {
+                var commandText = e.target.textContent.trim();
+                // Set the command in the input field
+                var userCommandInput = document.getElementById('user_command');
+                if (userCommandInput) {
+                    userCommandInput.value = commandText;
+                    // Submit the form
+                    document.getElementById('adventure-game-form').dispatchEvent(new Event('submit', { cancelable: true }));
+                } else {
+                    console.error('Input field with id "user_command" not found.');
+                }
+            }
     });
 </script>
 
@@ -992,6 +1011,8 @@ function wp_adventure_game_stream_callback() {
     // Clear the stored "Outcome" field
     //unset($parsed_state['Outcome']);
 
+    
+
     // Generate the updated HTML
     ob_start();
     $template_path = get_template_directory() . '/adventure-game-state-template.php';
@@ -1001,12 +1022,87 @@ function wp_adventure_game_stream_callback() {
         include plugin_dir_path(__FILE__) . 'adventure-game-state-template.php';
     }
     $updated_html = ob_get_clean();
+    
+    // Extract the 'Description' field
+    $description_text = isset($parsed_state['Description']) ? $parsed_state['Description'] : '';
+
+    // Now, generate the audio using the 'Description' field
+    $audio_url = wp_adventure_game_generate_audio($description_text);
+
+    // Prepare the response data
+    $response_data = [
+        'html' => $updated_html,
+        'audio_url' => $audio_url,
+    ];
+
+    // Return the response as JSON
+    wp_send_json_success($response_data);
 
     // Return the updated HTML
-    header('Content-Type: text/html; charset=UTF-8');
+    /*header('Content-Type: text/html; charset=UTF-8');
     echo $updated_html;
 
-    wp_die();
+    wp_die();*/
+}
+function wp_adventure_game_generate_audio($text) {
+    $api_key = get_option('wp_adventure_gameopenai_api_key');
+
+    if (empty($api_key)) {
+        error_log('Error: API key not set.');
+        return null;
+    }
+
+    // Prepare API request data for TTS
+    $postData = [
+        'model' => 'tts-1', // or 'tts-1-hd', depending on your preference
+        'input' => $text,
+        'voice' => 'alloy', // Replace with the desired voice: alloy, echo, fable, onyx, nova, shimmer
+        // Optional parameters
+        'response_format' => 'mp3', // Can be 'mp3', 'opus', 'aac', 'flac', 'wav', or 'pcm'
+        'speed' => 1, // Speed of the generated audio (0.25 to 4.0)
+    ];
+
+    // Execute the cURL request to OpenAI TTS API
+    $ch = curl_init('https://api.openai.com/v1/audio/speech');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        "Authorization: Bearer $api_key",
+    ]);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    $response = curl_exec($ch);
+    if (curl_errno($ch)) {
+        $error_msg = curl_error($ch);
+        error_log("cURL Error: $error_msg");
+        return null;
+    }
+
+    // Check HTTP status code
+    $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($http_status != 200) {
+        error_log("OpenAI TTS API Error: HTTP Status $http_status, Response: $response");
+        return null;
+    }
+
+    curl_close($ch);
+
+    // The API returns the audio file content directly, so we can save it as is
+    $audio_data = $response;
+
+    // Generate a unique filename for the audio file
+    $upload_dir = wp_upload_dir();
+    $audio_filename = 'adventure_game_audio_' . time() . '.mp3';
+    $audio_file_path = $upload_dir['basedir'] . '/' . $audio_filename;
+
+    // Save the audio content to a file
+    file_put_contents($audio_file_path, $audio_data);
+
+    // Return the URL to the audio file
+    $audio_url = $upload_dir['baseurl'] . '/' . $audio_filename;
+
+    return $audio_url;
 }
 
 

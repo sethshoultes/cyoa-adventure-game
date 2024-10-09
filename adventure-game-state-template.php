@@ -29,16 +29,16 @@ if ($character) {
     <p><strong>Turn:</strong> <?php echo esc_html($parsed_state['Turn number'] ?? ''); ?></p>
     <p><strong>Time:</strong> <?php echo esc_html($parsed_state['Time period of the day'] ?? ''); ?></p>
     <p><strong>Day:</strong> <?php echo esc_html($parsed_state['Current day number'] ?? ''); ?></p>
-    <p><strong>Weather:</strong> <?php echo esc_html($parsed_state['Weather'] ?? ''); ?></p>
-    <p><strong>Health:</strong> <?php echo esc_html($parsed_state['Health'] ?? ''); ?></p>
-    <p><strong>XP:</strong> <?php echo esc_html($parsed_state['XP'] ?? ''); ?></p>
-    <p><strong>AC:</strong> <?php echo esc_html($parsed_state['AC'] ?? ''); ?></p>
+    <?php if (isset($parsed_state['Weather'])): ?><p><strong>Weather:</strong> <?php echo esc_html($parsed_state['Weather']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['Health'])): ?><p><strong>Health:</strong> <?php echo esc_html($parsed_state['Health']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['XP'])): ?><p><strong>XP:</strong> <?php echo esc_html($parsed_state['XP']); ?></p><?php endif; ?>
+    <?php if (isset($parsed_state['AC'])): ?><p><strong>AC:</strong> <?php echo esc_html($parsed_state['AC']); ?></p><?php endif; ?>
     <p><strong>Level:</strong> <?php echo esc_html($parsed_state['Level'] ?? ''); ?></p>
     <p><strong>Location:</strong> <?php echo esc_html($parsed_state['Location'] ?? ''); ?></p>
-    <p><strong>Coins:</strong> <?php echo esc_html($parsed_state['Coins'] ?? ''); ?></p>
+    <?php if (isset($parsed_state['Coins'])): ?><p><strong>Coins:</strong> <?php echo esc_html($parsed_state['Coins']); ?></p><?php endif; ?>
     <p><strong>Quest:</strong> <?php echo esc_html($parsed_state['Quest'] ?? ''); ?></p>
     <p><strong>Inventory:</strong> <?php echo esc_html($parsed_state['Inventory'] ?? ''); ?></p>
-    <p><strong>Abilities:</strong> <?php echo esc_html($parsed_state['Abilities'] ?? ''); ?></p>
+    <?php if (isset($parsed_state['Abilities'])) echo '<p><strong>Abilities:</strong> ' . esc_html($parsed_state['Abilities']) . '</p>'; ?>
 </div>
 
 <?php if (!empty($character)): ?>

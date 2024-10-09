@@ -1,5 +1,4 @@
 <?php
-
 // Add Settings Page
 function wp_adventure_game_add_settings_page() {
     add_options_page(
@@ -23,6 +22,7 @@ function wp_adventure_game_render_settings_page() {
             do_settings_sections('wp_adventure_game_settings');
             submit_button();
             ?>
+            <a href="?run_cleanup" class="button">Run Audio File Cleanup</a>
         </form>
     </div>
     <?php

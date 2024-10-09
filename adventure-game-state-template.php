@@ -27,13 +27,10 @@ if ($character) {
 <div class="game-status">
     <h3>Game Status</h3>
     <?php if (isset($parsed_state['Stardate'])): ?><p><strong>Stardate:</strong> <?php echo esc_html($parsed_state['Stardate']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Ship Location'])): ?><p><strong>Ship Location:</strong> <?php echo esc_html($parsed_state['Ship Location']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Mission day'])): ?><p><strong>Mission Day:</strong> <?php echo esc_html($parsed_state['Mission day']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Space conditions'])): ?><p><strong>Space Conditions:</strong> <?php echo esc_html($parsed_state['Space conditions']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Shields'])): ?><p><strong>Shields:</strong> <?php echo esc_html($parsed_state['Shields']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Rank'])): ?><p><strong>Rank:</strong> <?php echo esc_html($parsed_state['Rank']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Location'])): ?><p><strong>Location:</strong> <?php echo esc_html($parsed_state['Location']); ?></p><?php endif; ?>
-    <?php if (isset($parsed_state['Weather'])): ?><p><strong>Weather:</strong> <?php echo esc_html($parsed_state['Weather']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Turn number'])): ?><p><strong>Turn:</strong> <?php echo esc_html($parsed_state['Turn number']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Time period of the day'])): ?><p><strong>Time:</strong> <?php echo esc_html($parsed_state['Time period of the day']); ?></p><?php endif; ?>
     <?php if (isset($parsed_state['Current day number'])): ?><p><strong>Day:</strong> <?php echo esc_html($parsed_state['Current day number']); ?></p><?php endif; ?>

@@ -870,7 +870,11 @@ function wp_adventure_game_stream_callback() {
     $description_text = isset($parsed_state['Description']) ? $parsed_state['Description'] : '';
 
     // Now, generate the audio using the 'Description' field
-    $audio_url = wp_adventure_game_generate_audio($description_text);
+    if (!empty($description_text)) {
+        $audio_url = wp_adventure_game_generate_audio($description_text);
+    } else {
+        $audio_url = null;
+    }
 
     // Prepare the response data
     $response_data = [

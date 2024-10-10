@@ -364,14 +364,7 @@ function wp_adventure_game_render_dashboard_page() {
     </ul>
 
     <h2>Author</h2>
-    <p>Developed by <a href="https://smartwebutah.com">Seth Shoultes</a>.</p>
-
-    <h2>Donation</h2>
-    <p>If you find this plugin useful, consider supporting its development:</p>
-    <ul>
-        <li><a href="#">PayPal</a></li>
-        <li><a href="#">Buy Me a Coffee</a></li>
-    </ul>
+    <p>Developed by <a href="https://adventurebuildr.com/">Seth Shoultes</a>.</p>
 
     <h2>Disclaimer</h2>
     <p>This is an open-source project provided as-is. The developer is not responsible for any unintended consequences arising from its use.</p>

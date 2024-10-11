@@ -3,7 +3,7 @@
 Plugin Name: Text Adventure Game with OpenAI Streaming and User Accounts
 Plugin URI: https://github.com/sethshoultes/cyoa-adventure-game
 Description: A text adventure game powered by OpenAI's API with user accounts. Use the shortcode [wp_adventure_game] or [wp_adventure_game role_id=64 game_state_id=66] to play. Use [adventure_game_history] to view past adventures. Use [adventure_game_character] to manage your character. Starting games using a custom game state and role is possible using URL parameters ?new_adventure=1&role_id=124&game_state_id=123. This plugin requires an OpenAI API key to function.
-Version: 1.1.4
+Version: 1.1.5
 Author: Seth Shoultes
 Author URI: https://adventurebuildr.com/
 License: GPL2

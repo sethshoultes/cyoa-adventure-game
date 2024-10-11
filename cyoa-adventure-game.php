@@ -12,6 +12,7 @@ use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
+}
 /**
  * Initialize the plugin update checker.
  */

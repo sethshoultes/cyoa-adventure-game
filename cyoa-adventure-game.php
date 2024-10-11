@@ -9,11 +9,13 @@ Author URI: https://adventurebuildr.com/
 License: GPL2
 */
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
 /**
  * Initialize the plugin update checker.
  */
-function my_plugin_auto_update() {
+function wp_adventure_game_plugin_auto_update() {
     // Include the library if it's not already included
     if ( ! class_exists( '\\YahnisElsts\\PluginUpdateChecker\\PluginUpdateChecker' ) ) {
         require_once plugin_dir_path( __FILE__ ) . 'includes/plugin-update-checker/plugin-update-checker.php';
@@ -47,7 +49,7 @@ function my_plugin_auto_update() {
     // Optional: If your repository is private, add your access token
     // $updateChecker->setAuthentication('your_github_access_token');
 }
-add_action( 'init', 'my_plugin_auto_update' );
+add_action( 'init', 'wp_adventure_game_plugin_auto_update' );
 
 // Enqueue Styles
 function wp_adventure_game_enqueue_styles() {

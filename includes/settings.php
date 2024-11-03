@@ -207,7 +207,7 @@ function wp_adventure_game_render_dashboard_page() {
         <li><strong>Interactive Gameplay</strong>: An engaging text adventure game inspired by D&D 5e and The Elder Scrolls.</li>
         <li><strong>User Accounts</strong>: Each user can start, resume, and manage their own adventures.</li>
         <li><strong>OpenAI Integration</strong>: Powered by OpenAI's GPT models for dynamic storytelling.</li>
-        <li><strong>Character Management</strong>: Users can create and customize their own characters.</li>
+        <li><strong>Character Management</strong>: Users can create and customize their own characters. (CYOA Character Builder plugin required.)</li>
         <li><strong>Adventure History</strong>: View past adventures and continue where you left off.</li>
         <li><strong>Custom Game States and Roles</strong>: Administrators can define custom game states and roles.</li>
         <li><strong>Shortcodes</strong>: Easy integration with WordPress pages and posts using shortcodes.</li>
@@ -231,7 +231,7 @@ function wp_adventure_game_render_dashboard_page() {
     <ul>
         <li><code>[wp_adventure_game]</code>: Displays the adventure game interface.</li>
         <li><code>[adventure_game_history]</code>: Shows the user's past adventures.</li>
-        <li><code>[adventure_game_character]</code>: Allows users to manage their character.</li>
+        <li><code>[cyoa_character_builder]</code>: Allows users to manage their character.  (CYOA Character Builder plugin required.)</li>
     </ul>
 
     <h3 id="creating-a-new-adventure">Creating a New Adventure</h3>

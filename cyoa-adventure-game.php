@@ -54,11 +54,13 @@ add_action( 'init', 'wp_adventure_game_plugin_auto_update' );
 
 // Enqueue Styles
 function wp_adventure_game_enqueue_styles() {
-    wp_enqueue_style('adventure-game-styles', plugin_dir_url(__FILE__) . 'adventure-game.css');
+    wp_enqueue_style('adventure-game-styles', plugins_url('assets/adventure-game.css', __FILE__));
 }
 add_action('wp_enqueue_scripts', 'wp_adventure_game_enqueue_styles');
+add_action('enqueue_block_editor_assets', 'wp_adventure_game_enqueue_styles');
 
 require_once plugin_dir_path( __FILE__ ) . 'includes/default-game-instructions.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/audio.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/audio-file-cleanup.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/settings.php';
 
@@ -92,8 +94,6 @@ function wp_adventure_game_handle_new_game_via_url() {
 }
 // Hook the function into 'template_redirect' so it runs before the template is loaded
 add_action('template_redirect', 'wp_adventure_game_handle_new_game_via_url');
-
-
 
 // Handle Form Submissions and Redirects
 function wp_adventure_game_handle_form_submissions() {
@@ -735,68 +735,6 @@ function wp_adventure_game_stream_callback() {
 // Register AJAX Actions
 add_action('wp_ajax_wp_adventure_game_stream', 'wp_adventure_game_stream_callback');
 
-// Function to generate audio from text using OpenAI TTS API
-function wp_adventure_game_generate_audio($text) {
-    $api_key = get_option('wp_adventure_gameopenai_api_key');
-    $voice = get_option('wp_adventure_gamechatgpt_audio_version');
-
-    if (empty($api_key)) {
-        error_log('Error: API key not set.');
-        return null;
-    }
-
-    // Prepare API request data for TTS
-    $postData = [
-        'model' => 'tts-1', // or 'tts-1-hd', depending on your preference
-        'input' => $text,
-        'voice' => $voice, // Replace with the desired voice: alloy, echo, fable, onyx, nova, shimmer
-        // Optional parameters
-        'response_format' => 'mp3', // Can be 'mp3', 'opus', 'aac', 'flac', 'wav', or 'pcm'
-        'speed' => 1, // Speed of the generated audio (0.25 to 4.0)
-    ];
-
-    // Execute the cURL request to OpenAI TTS API
-    $ch = curl_init('https://api.openai.com/v1/audio/speech');
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        "Authorization: Bearer $api_key",
-    ]);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    $response = curl_exec($ch);
-    if (curl_errno($ch)) {
-        $error_msg = curl_error($ch);
-        error_log("cURL Error: $error_msg");
-        return null;
-    }
-
-    // Check HTTP status code
-    $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    if ($http_status != 200) {
-        error_log("OpenAI TTS API Error: HTTP Status $http_status, Response: $response");
-        return null;
-    }
-
-    curl_close($ch);
-
-    // The API returns the audio file content directly, so we can save it as is
-    $audio_data = $response;
-
-    // Generate a unique filename for the audio file
-    $upload_dir = wp_upload_dir();
-    $audio_filename = 'adventure_game_audio_' . time() . '.mp3';
-    $audio_file_path = $upload_dir['basedir'] . '/' . $audio_filename;
-
-    // Save the audio content to a file
-    file_put_contents($audio_file_path, $audio_data);
-
-    // Return the URL to the audio file
-    $audio_url = $upload_dir['baseurl'] . '/' . $audio_filename;
-
-    return $audio_url;
-}
 
 // Shortcode to display the adventure history
 function wp_adventure_game_history_shortcode() {
@@ -869,3 +807,41 @@ function wp_adventure_game_clear_history() {
     }
 }
 add_action('template_redirect', 'wp_adventure_game_clear_history');
+
+// Register the block
+function wp_adventure_game_register_block() {
+    if (!function_exists('register_block_type')) {
+        return;
+    }
+
+    wp_register_script(
+        'wp-adventure-game-block-editor',
+        plugins_url('assets/block.js', __FILE__),
+        array('wp-blocks', 'wp-element', 'wp-components', 'wp-editor'),
+        filemtime(plugin_dir_path(__FILE__) . 'assets/block.js')
+    );
+
+    register_block_type('cyoa-adventure-game/adventure-game', array(
+        'editor_script' => 'wp-adventure-game-block-editor',
+        'render_callback' => 'wp_adventure_game_shortcode'
+    ));
+}
+add_action('init', 'wp_adventure_game_register_block');
+
+// Enqueue block editor assets
+function wp_adventure_game_enqueue_block_editor_assets() {
+    wp_enqueue_script(
+        'wp-adventure-game-block-editor',
+        plugins_url('assets/block.js', __FILE__),
+        array('wp-blocks', 'wp-element', 'wp-components', 'wp-editor'),
+        filemtime(plugin_dir_path(__FILE__) . 'assets/block.js')
+    );
+
+    wp_enqueue_style(
+        'wp-adventure-game-block-editor-style',
+        plugins_url('assets/editor-styles.css', __FILE__),
+        array(),
+        filemtime(plugin_dir_path(__FILE__) . 'assets/editor-styles.css')
+    );
+}
+add_action('enqueue_block_editor_assets', 'wp_adventure_game_enqueue_block_editor_assets');

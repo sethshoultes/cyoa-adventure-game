@@ -59,6 +59,50 @@
             return null; // Dynamic block, render on PHP side
         },
     });
+    blocks.registerBlockType('cyoa-adventure-game/adventure-game-history', {
+        title: 'Adventure Game History',
+        icon: 'list-view',
+        category: 'widgets',
+        edit: function() {
+            return el(
+                'div',
+                { 
+                    className: 'wp-block-cyoa-adventure-game-adventure-game-history',
+                    style: {
+                        backgroundColor: '#f0f0f0',
+                        border: '2px solid #ddd',
+                        borderRadius: '8px',
+                        padding: '20px',
+                        margin: '20px 0',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                el('div', { 
+                    className: 'cyoa-history-icon',
+                    style: {
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginBottom: '10px'
+                    }
+                },
+                    el('span', { 
+                        className: 'dashicons dashicons-list-view',
+                        style: {
+                            fontSize: '40px',
+                            width: '40px',
+                            height: '40px',
+                            color: '#0073aa'
+                        }
+                    })
+                ),
+                el('h3', { style: { textAlign: 'center', margin: '0 0 10px 0', color: '#23282d' } }, 'Adventure Game History'),
+                el('p', { style: { fontSize: '16px', lineHeight: '1.6', color: '#555', margin: '0', textAlign: 'center' } }, 'This block will display the Adventure Game History on the front end.')
+            );
+        },
+        save: function() {
+            return null; // Dynamic block, render on PHP side
+        }
+    });
 }(
     window.wp.blocks,
     window.wp.element,

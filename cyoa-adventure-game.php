@@ -825,6 +825,11 @@ function wp_adventure_game_register_block() {
         'editor_script' => 'wp-adventure-game-block-editor',
         'render_callback' => 'wp_adventure_game_shortcode'
     ));
+    
+    register_block_type('cyoa-adventure-game/adventure-game-history', array(
+        'editor_script' => 'wp-adventure-game-block-editor',
+        'render_callback' => 'wp_adventure_game_history_shortcode'
+    ));
 }
 add_action('init', 'wp_adventure_game_register_block');
 

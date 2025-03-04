@@ -1,0 +1,167 @@
+name: Bug Report
+description: "A structured template for reporting customer-reported bugs or issues with complete details"
+labels:
+  - bug
+body:
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      description: Which product is this bug report for?
+      options:
+        - MemberPress
+        - AccessAlly
+        - MemberMouse
+        - Wishlist Member
+        - ThirstyAffiliates
+        - PrettyLinks
+        - EasyAffiliate
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of what the bug is and how it affects the customer
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce
+      description: Provide the exact steps someone should follow to reproduce the issue
+      value: |
+        1. Go to...
+        2. Click on...
+        3. Fill out...
+        4. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What should happen when following the steps above?
+      value: |
+        Describe what the customer expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happens when following the steps above?
+      value: |
+        Describe what actually happened, including any error messages.
+    validations:
+      required: true
+
+  - type: input
+    id: wordpress-version
+    attributes:
+      label: WordPress Version
+      description: Which version of WordPress is the customer using?
+      placeholder: "e.g., 6.4.2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: plugin-versions
+    attributes:
+      label: Plugin Versions
+      description: List the versions of all relevant plugins including the affected product
+      value: |
+        - [Product Name]: version x.x.x
+        - [Other Plugin]: version x.x.x
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP Version
+      description: Which version of PHP is the customer's server running?
+      placeholder: "e.g., 8.1.2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: theme-active-plugins
+    attributes:
+      label: Theme and Active Plugins
+      description: Which theme is the customer using and what other plugins are active?
+      value: |
+        Theme: 
+        
+        Active plugins:
+        - Plugin 1
+        - Plugin 2
+    validations:
+      required: false
+
+  - type: input
+    id: hosting-environment
+    attributes:
+      label: Hosting Environment
+      description: Details about the customer's hosting environment
+      placeholder: "e.g., WP Engine, shared hosting, VPS, etc."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: payment-gateway
+    attributes:
+      label: Payment Gateway (if applicable)
+      description: If this issue involves payments, which gateway is the customer using?
+      options:
+        - None
+        - Stripe
+        - PayPal
+        - Authorize.net
+        - Other
+    validations:
+      required: false
+
+  - type: input
+    id: transaction-id
+    attributes:
+      label: Transaction ID (if applicable)
+      description: If this is related to a specific transaction, provide the transaction ID (no sensitive data)
+    validations:
+      required: false
+
+  - type: textarea
+    id: api-logs
+    attributes:
+      label: API Logs (if applicable)
+      description: If you have API logs related to this issue, please include them here (with sensitive data removed)
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or Videos
+      description: If applicable, add screenshots or videos to help explain the problem (drag and drop supported)
+    validations:
+      required: false
+
+  - type: input
+    id: support-ticket
+    attributes:
+      label: Support Ticket Link
+      description: Link to the relevant Helpscout or Freescout conversation
+      placeholder: "https://help.caseproof.com/conversation/######"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-information
+    attributes:
+      label: Additional Information
+      description: Any other context or details about the problem
